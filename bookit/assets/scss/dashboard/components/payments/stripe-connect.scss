@@ -1,0 +1,165 @@
+/**
+ * Stripe Connect Styling
+ */
+
+
+.bookit_admin-settings-payments-gateway {
+	background: #fff;
+	border: 1px solid #ccc;
+	border-radius: 4px;
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: row;
+	justify-content: space-around;
+	margin-bottom: 16px;
+	padding: 45px 32px 20px 32px;
+
+	@media (min-width: 768px) {
+		background-image: url("../../../../images/stripe/background-gateway-connect.png");
+		background-position: center right;
+		background-repeat: no-repeat;
+		background-size: 420px 100%;
+	}
+}
+
+.bookit_admin-settings-payments-gateway-connect {
+	display: flex;
+	flex: 1;
+
+	@media (min-width: 768px) {
+		padding-right: 74px;
+	}
+}
+
+.bookit_admin-settings-payments-gateway-connect-text--connected {
+	color: #1eb056;
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.bookit_admin-settings-payments-gateway-connected-row {
+	display: flex;
+	font-size: 13px;
+	font-weight: normal;
+	margin: 20px 0;
+	text-align: left;
+}
+
+.bookit_admin-settings-payments-gateway-connected-col1 {
+	flex-basis: 20%;
+	min-width: 125px;
+}
+
+.bookit_admin-settings-payments-gateway-connected-col2 {
+	flex-basis: 80%;
+}
+
+.bookit_admin-settings-payments-gateway-connect,
+.bookit_admin-settings-payments-gateway-logo {
+	flex-direction: column;
+}
+
+a.bookit_admin-settings-payments-gateway-connect-button-link {
+	background: #405bfb;
+	border-radius: 4px;
+	color: #fff;
+	display: inline-block;
+	font-size: 16px;
+	font-weight: 600;
+	line-height: 18px;
+	margin-top: 25px;
+	min-width: 340px;
+	padding: 15px 0;
+	text-align: center;
+	text-decoration: none;
+	width: 100%;
+
+	&:hover,
+	&:active,
+	&:visited,
+	&:focus {
+		color: #fff;
+	}
+
+	&.disabled {
+		background-color: rgba(51, 74, 255, 0.07);
+		pointer-events: none;
+	}
+}
+
+.bookit_admin-settings-payments-gateway-connected-text-name {
+	font-weight: 700;
+}
+
+.bookit_admin-settings-payments-gateway-connected-text-disconnect-link {
+	border-bottom: 1px solid #405bfb;
+	font-size: 13px;
+	margin-left: 10px;
+	text-transform: lowercase;
+
+	&,
+	&:hover,
+	&:active,
+	&:visited,
+	&:focus {
+		color: #405bfb;
+	}
+}
+
+.bookit_admin-settings-payments-gateway-title {
+	font-size: 20px;
+}
+
+.bookit_admin-settings-payments-gateway-description {
+	align-items: start;
+	display: flex;
+	flex-direction: column;
+	flex-grow: 1;
+	margin-bottom: 20px;
+
+	p {
+		max-width: 470px;
+	}
+}
+
+.bookit_admin-settings-payments-gateway-signup-links {
+	flex-grow: 1;
+	margin-top: 40px;
+}
+
+.bookit_admin-settings-payments-gateway-help-links {
+	margin-top: 40px;
+}
+
+.bookit_admin-settings-payments-gateway-help-link {
+	align-items: center;
+	display: flex;
+
+	&:not(:last-of-type) {
+		margin-bottom: 8px;
+	}
+}
+
+.bookit_admin-settings-payments-stripe-modal-content-title {
+	margin-bottom: 16px
+}
+
+.bookit_admin-settings-payments-stripe-modal-content-section {
+	margin-bottom: 16px
+}
+
+.bookit_admin-settings-payments-gateway-currency {
+	font-weight: 700;
+}
+
+.bookit_admin-settings-payments-gateway-capability--yes {
+	color: #1eb056;
+}
+
+.bookit_admin-settings-payments-gateway-capability--no {
+	color: #da394d;
+}
+
+.bookit_admin-settings-payments-gateway-help-link-url {
+	margin-left: 8px;
+}

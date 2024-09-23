@@ -1,0 +1,134 @@
+/**
+ * Bookit Google Calendar Addon
+ */
+#bookit-dashboard-app {
+  .bookit-wrapper{
+    .bookit-tabs-details{
+      .google-calendar-settings{
+        min-height: 780px;
+        overflow: hidden;
+        position: relative;
+
+        .pro-feature{
+          margin-top: 20px;
+        }
+
+        &.not-active{
+          opacity: 0.5;
+          pointer-events: none;
+        }
+
+        .setting-row{
+          .event-template {
+            flex-basis: 100%;
+            margin-bottom: 25px;
+            .form-group {
+              .label{
+                color: $black;
+                font-size: 12px;
+                font-weight: 700;
+                text-transform: uppercase;
+                flex-basis: 100%;
+              }
+              small{
+                margin-bottom: 5px;
+                input[readonly] {
+                  font-size: 16px;
+                  font-weight: 400;
+                  margin-top: 0;
+                  width: 100%;
+                  &:hover {
+                    opacity: 0.8;
+                  }
+                  &.small {
+                    width: auto;
+                    min-height: auto;
+                    height: 30px;
+                    color: $base-color;
+                    background: rgba(0, 102, 102, 0.1);
+                    border-radius: 4px;
+                    padding: 0;
+                    border: none;
+                    margin-right: 5px;
+                    margin-bottom: 5px;
+                    cursor: pointer;
+                    text-align: center;
+                  }
+                }
+              }
+              textarea{
+                height: auto;
+              }
+            }
+          }
+        }
+
+        .group-title{
+          display: block;
+          margin: 0 0 30px 0;
+          @include normal-font;
+          color: $black;
+          font-weight: 700;
+          text-transform: uppercase;
+        }
+        .bookit-row{
+          .bookit-button{
+            &.connected{
+              cursor: unset;
+            }
+          }
+          a{
+            &.bookit-button{
+              display: inline-flex;
+              width: max-content;
+              justify-content: center;
+              align-items: center;
+            }
+          }
+          .form-group{
+            .bookit-button{
+              &.light{
+                margin-top: 0px;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    .google-calendar-settings {
+      .gc-data {
+        .bookit-button.bookit-google-calendar-sign-in {
+          background-color: transparent;
+          background-image: url('../../../../images/google/btn_google_signin_light_normal_web@2x.png');
+          background-repeat: no-repeat;
+          background-size: contain;
+          border: none;
+          display: inline-block;
+          height: 46px;
+          margin: 0;
+          text-indent: -2000px;
+          width: 191px;
+
+          &:hover {
+            background-image: url('../../../../images/google/btn_google_signin_light_pressed_web@2x.png');
+          }
+
+          &:focus {
+            background-image: url('../../../../images/google/btn_google_signin_light_focus_web@2x.png');
+          }
+        }
+
+        label.gc-label{
+          text-transform: none;
+        }
+      }
+      .gcal-data-policy {
+        font-style: italic;
+        max-width: 475px;
+      }
+    }
+
+  }
+}
+
