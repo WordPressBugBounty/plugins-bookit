@@ -102,20 +102,20 @@ class ServicesController extends DashboardController {
 		$errors = array();
 
 		if ( null == $data['price'] || $data['price'] && preg_match( '/^\d+(\.\d{2})?$/', $data['price'] ) == '0' ) {
-			$errors['price'] = __( 'Price must be a number' );
+			$errors['price'] = __( 'Price must be a number', 'bookit' );
 		}
 
 		if ( ! $data['category_id'] ) {
-			$errors['category_id'] = __( 'Category is required' );
+			$errors['category_id'] = __( 'Category is required', 'bookit' );
 		}
 
 		if ( $data['title'] ) {
 			$data['title'] = preg_replace( '/\s\s+/', ' ', $data['title'] );
 			if ( strlen( $data['title'] ) < 3 ) {
-				$errors['title'] = __( 'Title must be greater than 3 characters' );
+				$errors['title'] = __( 'Title must be greater than 3 characters', 'bookit' );
 			}
 		} else {
-			$errors['title'] = __( 'Title is required' );
+			$errors['title'] = __( 'Title is required', 'bookit' );
 		}
 
 		if ( count( $errors ) > 0 ) {

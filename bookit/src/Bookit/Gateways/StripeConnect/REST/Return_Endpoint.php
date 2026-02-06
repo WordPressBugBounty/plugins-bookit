@@ -66,10 +66,21 @@ class Return_Endpoint extends Abstract_REST_Endpoint {
 			'methods'             => WP_REST_Server::READABLE,
 			'args'                => $this->create_order_args(),
 			'callback'            => [ $this, 'handle_stripe_return' ],
-			'permission_callback' => '__return_true',
+			'permission_callback' => [ $this, 'check_permission' ],
 		] );
 
 		$this->documentation->register_documentation_provider( $this->get_endpoint_path(), $this );
+	}
+
+	/**
+	 * Check if the current user has permission to connect Stripe accounts.
+	 *
+	 * @since 2.5.1
+	 *
+	 * @return bool True if user has permission, false otherwise.
+	 */
+	public function check_permission() {
+		return current_user_can( 'manage_options' );
 	}
 
 	/**
@@ -150,7 +161,14 @@ class Return_Endpoint extends Abstract_REST_Endpoint {
 			$disconnect_url = bookit( Signup::class )->generate_disconnect_url();
 
 			bookit( Merchant::class )->delete_signup_data();
-			wp_redirect( $disconnect_url );
+
+			// Allow WhoDat domain for redirect
+			add_filter( 'allowed_redirect_hosts', function( $hosts ) {
+				$hosts[] = 'whodat.theeventscalendar.com';
+				return $hosts;
+			} );
+
+			wp_safe_redirect( $disconnect_url );
 			exit();
 		}
 

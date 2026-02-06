@@ -37,21 +37,21 @@ class Staff extends DatabaseModel {
 
 		$staffList = $wpdb->get_results(
 			sprintf(
-				'SELECT %1$s.*, 
-						CONCAT( \'[\', GROUP_CONCAT(DISTINCT CONCAT( 
-							\'{"id":\', %2$s.id,
-							\', "weekday":\', %2$s.weekday,
-							\', "start_time":"\', IFNULL(LEFT(%2$s.start_time, 8), "NULL"),
-							\'", "end_time":"\', IFNULL(LEFT(%2$s.end_time, 8), "NULL"),
-							\'", "break_from":"\', IFNULL(LEFT(%2$s.break_from, 8), "NULL"),
-							\'", "break_to":"\', IFNULL(LEFT(%2$s.break_to, 8), "NULL"),
+				'SELECT `%1$s`.*,
+						CONCAT( \'[\', GROUP_CONCAT(DISTINCT CONCAT(
+							\'{"id":\', `%2$s`.id,
+							\', "weekday":\', `%2$s`.weekday,
+							\', "start_time":"\', IFNULL(LEFT(`%2$s`.start_time, 8), "NULL"),
+							\'", "end_time":"\', IFNULL(LEFT(`%2$s`.end_time, 8), "NULL"),
+							\'", "break_from":"\', IFNULL(LEFT(`%2$s`.break_from, 8), "NULL"),
+							\'", "break_to":"\', IFNULL(LEFT(`%2$s`.break_to, 8), "NULL"),
 						\'"}\' ) ), \']\' ) as working_hours
-						FROM %1$s 
-						LEFT JOIN %2$s ON %2$s.staff_id = %1$s.id 
-						GROUP BY %1$s.%3$s ORDER BY %1$s.full_name DESC',
-				self::_table(), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-				Staff_Working_Hours::_table(), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-				static::$primary_key // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+						FROM `%1$s`
+						LEFT JOIN `%2$s` ON `%2$s`.staff_id = `%1$s`.id
+						GROUP BY `%1$s`.`%3$s` ORDER BY `%1$s`.full_name DESC',
+				esc_sql( self::_table() ), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				esc_sql( Staff_Working_Hours::_table() ), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				esc_sql( static::$primary_key ) // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 			),
 			ARRAY_A
 		);
@@ -83,12 +83,12 @@ class Staff extends DatabaseModel {
 	public static function get_by_id_and_service( $id, $service_id ) {
 		global $wpdb;
 		$sql = sprintf(
-			'SELECT %1$s.id FROM %1$s
-					LEFT JOIN %2$s ON %1$s.id = %2$s.staff_id
-					WHERE %1$s.id = %%d AND %2$s.service_id = %%d',
-			self::_table(),
-			Staff_Services::_table(),
-			static::$primary_key
+			'SELECT `%1$s`.id FROM `%1$s`
+					LEFT JOIN `%2$s` ON `%1$s`.id = `%2$s`.staff_id
+					WHERE `%1$s`.id = %%d AND `%2$s`.service_id = %%d',
+			esc_sql( self::_table() ),
+			esc_sql( Staff_Services::_table() ),
+			esc_sql( static::$primary_key )
 		);
 
 		return $wpdb->get_var( $wpdb->prepare( $sql, intval( $id ), intval( $service_id ) ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
@@ -102,9 +102,9 @@ class Staff extends DatabaseModel {
 		global $wpdb;
 		return $wpdb->get_results(
 			sprintf(
-				'SELECT * FROM %s ORDER BY %s DESC',
-				self::_table(), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-				static::$primary_key // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				'SELECT * FROM `%s` ORDER BY `%s` DESC',
+				esc_sql( self::_table() ), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				esc_sql( static::$primary_key ) // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 			),
 			ARRAY_A
 		);
@@ -119,32 +119,32 @@ class Staff extends DatabaseModel {
 		global $wpdb;
 		return $wpdb->get_results(
 			sprintf(
-				'SELECT %1$s.*, 
+				'SELECT `%1$s`.*,
 						CONCAT( \'[\', GROUP_CONCAT(DISTINCT CONCAT(
-							\'{"id":\', %2$s.id,
-							\', "category_id":\', %2$s.category_id,
-							\', "title":"\', %2$s.title,
-							\'", "price":"\', %3$s.price,
+							\'{"id":\', `%2$s`.id,
+							\', "category_id":\', `%2$s`.category_id,
+							\', "title":"\', `%2$s`.title,
+							\'", "price":"\', `%3$s`.price,
 						\'"}\' ) ), \']\' ) as staff_services,
-						CONCAT( \'[\', GROUP_CONCAT(DISTINCT CONCAT( 
-							\'{"id":\', %4$s.id,
-							\', "weekday":\', %4$s.weekday,
-							\', "start_time":"\', IFNULL(LEFT(%4$s.start_time, 8), "NULL"),
-							\'", "end_time":"\', IFNULL(LEFT(%4$s.end_time, 8), "NULL"),
-							\'", "break_from":"\', IFNULL(LEFT(%4$s.break_from, 8), "NULL"),
-							\'", "break_to":"\', IFNULL(LEFT(%4$s.break_to, 8), "NULL"),
+						CONCAT( \'[\', GROUP_CONCAT(DISTINCT CONCAT(
+							\'{"id":\', `%4$s`.id,
+							\', "weekday":\', `%4$s`.weekday,
+							\', "start_time":"\', IFNULL(LEFT(`%4$s`.start_time, 8), "NULL"),
+							\'", "end_time":"\', IFNULL(LEFT(`%4$s`.end_time, 8), "NULL"),
+							\'", "break_from":"\', IFNULL(LEFT(`%4$s`.break_from, 8), "NULL"),
+							\'", "break_to":"\', IFNULL(LEFT(`%4$s`.break_to, 8), "NULL"),
 						\'"}\' ) ), \']\' ) as working_hours
-						FROM %1$s 
-						LEFT JOIN %3$s ON %3$s.staff_id = %1$s.id 
-						LEFT JOIN %2$s ON %3$s.service_id = %2$s.id 
-						LEFT JOIN %4$s ON %4$s.staff_id = %1$s.id 
-						WHERE %1$s.id = %6$d
-						GROUP BY %1$s.%5$s ORDER BY %1$s.%5$s DESC',
-				self::_table(), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-				Services::_table(), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-				Staff_Services::_table(), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-				Staff_Working_Hours::_table(), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-				static::$primary_key, // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+						FROM `%1$s`
+						LEFT JOIN `%3$s` ON `%3$s`.staff_id = `%1$s`.id
+						LEFT JOIN `%2$s` ON `%3$s`.service_id = `%2$s`.id
+						LEFT JOIN `%4$s` ON `%4$s`.staff_id = `%1$s`.id
+						WHERE `%1$s`.id = %6$d
+						GROUP BY `%1$s`.`%5$s` ORDER BY `%1$s`.`%5$s` DESC',
+				esc_sql( self::_table() ), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				esc_sql( Services::_table() ), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				esc_sql( Staff_Services::_table() ), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				esc_sql( Staff_Working_Hours::_table() ), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				esc_sql( static::$primary_key ), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 				intval( $staff_id )
 			),
 			ARRAY_A
@@ -157,12 +157,12 @@ class Staff extends DatabaseModel {
 	public static function get_staff_total_service( $staff_id ) {
 		global $wpdb;
 		$sql = sprintf(
-			'SELECT COUNT(%2$s.id)
-					FROM %1$s
-					LEFT JOIN %2$s ON %1$s.id = %2$s.staff_id 
-					WHERE  %1$s.id = %%d',
-			self::_table(),
-			Staff_Services::_table()
+			'SELECT COUNT(`%2$s`.id)
+					FROM `%1$s`
+					LEFT JOIN `%2$s` ON `%1$s`.id = `%2$s`.staff_id
+					WHERE  `%1$s`.id = %%d',
+			esc_sql( self::_table() ),
+			esc_sql( Staff_Services::_table() )
 		);
 		return $wpdb->get_var( $wpdb->prepare( $sql, intval( $staff_id ) ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 	}
@@ -215,31 +215,31 @@ class Staff extends DatabaseModel {
 		global $wpdb;
 		return $wpdb->get_results(
 			sprintf(
-				'SELECT %1$s.*, 
+				'SELECT `%1$s`.*,
 						CONCAT( \'[\', GROUP_CONCAT(DISTINCT CONCAT(
-							\'{"id":\', %2$s.id,
-							\', "title":"\', %2$s.title,
-							\'", "price":"\', %3$s.price,
+							\'{"id":\', `%2$s`.id,
+							\', "title":"\', `%2$s`.title,
+							\'", "price":"\', `%3$s`.price,
 						\'"}\' ) ), \']\' ) as staff_services,
-						CONCAT( \'[\', GROUP_CONCAT(DISTINCT CONCAT( 
-							\'{"id":\', %4$s.id,
-							\', "weekday":\', %4$s.weekday,
-							\', "start_time":"\', IFNULL(LEFT(%4$s.start_time, 8), "NULL"),
-							\'", "end_time":"\', IFNULL(LEFT(%4$s.end_time, 8), "NULL"),
-							\'", "break_from":"\', IFNULL(LEFT(%4$s.break_from, 8), "NULL"),
-							\'", "break_to":"\', IFNULL(LEFT(%4$s.break_to, 8), "NULL"),
+						CONCAT( \'[\', GROUP_CONCAT(DISTINCT CONCAT(
+							\'{"id":\', `%4$s`.id,
+							\', "weekday":\', `%4$s`.weekday,
+							\', "start_time":"\', IFNULL(LEFT(`%4$s`.start_time, 8), "NULL"),
+							\'", "end_time":"\', IFNULL(LEFT(`%4$s`.end_time, 8), "NULL"),
+							\'", "break_from":"\', IFNULL(LEFT(`%4$s`.break_from, 8), "NULL"),
+							\'", "break_to":"\', IFNULL(LEFT(`%4$s`.break_to, 8), "NULL"),
 						\'"}\' ) ), \']\' ) as working_hours
-						FROM %1$s 
-						LEFT JOIN %3$s ON %3$s.staff_id = %1$s.id 
-						LEFT JOIN %2$s ON %3$s.service_id = %2$s.id 
-						LEFT JOIN %4$s ON %4$s.staff_id = %1$s.id 
-						WHERE %1$s.wp_user_id = %6$d
-						GROUP BY %1$s.%5$s ORDER BY %1$s.%5$s DESC',
-				self::_table(), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-				Services::_table(), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-				Staff_Services::_table(), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-				Staff_Working_Hours::_table(), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-				static::$primary_key, // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+						FROM `%1$s`
+						LEFT JOIN `%3$s` ON `%3$s`.staff_id = `%1$s`.id
+						LEFT JOIN `%2$s` ON `%3$s`.service_id = `%2$s`.id
+						LEFT JOIN `%4$s` ON `%4$s`.staff_id = `%1$s`.id
+						WHERE `%1$s`.wp_user_id = %6$d
+						GROUP BY `%1$s`.`%5$s` ORDER BY `%1$s`.`%5$s` DESC',
+				esc_sql( self::_table() ), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				esc_sql( Services::_table() ), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				esc_sql( Staff_Services::_table() ), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				esc_sql( Staff_Working_Hours::_table() ), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				esc_sql( static::$primary_key ), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 				intval( $wp_user_id )
 			),
 			ARRAY_A

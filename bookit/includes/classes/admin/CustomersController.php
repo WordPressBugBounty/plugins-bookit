@@ -169,7 +169,7 @@ class CustomersController extends DashboardController {
 		}
 
 		if ( $data['email'] && ! is_email( $data['email'] ) ) {
-			$errors['email'] = __( 'Not valid Email' );
+			$errors['email'] = __( 'Not valid Email', 'bookit' );
 		}
 
 		$customer = Customers::get( 'email', $data['email'] );
@@ -179,24 +179,24 @@ class CustomersController extends DashboardController {
 
 		if ( $data['full_name'] ) {
 			if ( strlen( $data['full_name'] ) < 3 || strlen( $data['full_name'] ) > 25 ) {
-				$errors['full_name'] = __( 'Full name must be between 3 and 25 characters long' );
+				$errors['full_name'] = __( 'Full name must be between 3 and 25 characters long', 'bookit' );
 			}
 		} else {
-			$errors['full_name'] = __( 'Full Name is required.' );
+			$errors['full_name'] = __( 'Full Name is required.', 'bookit' );
 		}
 		$settings_booking_type = get_option_by_path( 'bookit_settings.booking_type' );
 		if ( isset( $data['from'] ) && 'calendar' == $data['from'] && 'registered' == $settings_booking_type ) {
 
 			if ( empty( $data['password'] ) ) {
-				$errors['password'] = __( 'Please enter a password' );
+				$errors['password'] = __( 'Please enter a password', 'bookit' );
 			}
 
 			if ( false !== strpos( wp_unslash( $data['password'] ), '\\' ) ) {
-				$errors['password'] = __( "Passwords may not contain the character '\\'" );
+				$errors['password'] = __( "Passwords may not contain the character '\\'", 'bookit' );
 			}
 
 			if ( ( ! empty( $data['password'] ) ) && $data['password'] != $data['password_confirmation'] ) {
-				$errors['password_confirmation'] = __( 'Please enter the same password in both password fields' );
+				$errors['password_confirmation'] = __( 'Please enter the same password in both password fields', 'bookit' );
 			}
 		}
 
@@ -280,10 +280,13 @@ class CustomersController extends DashboardController {
 
 			do_action( 'bookit_customer_saved', $data['id'] );
 
+			$customer = Customers::get( 'id', $data['id'] );
+
 			wp_send_json_success(
 				array(
-					'id'      => $data['id'],
-					'message' => __( 'Customer Saved!', 'bookit' ),
+					'id'       => $data['id'],
+					'customer' => $customer,
+					'message'  => __( 'Customer Saved!', 'bookit' ),
 				)
 			);
 		}

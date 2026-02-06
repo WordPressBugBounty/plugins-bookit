@@ -12,7 +12,7 @@ export default {
         <div :class="['form-group small no-margin', {disabled: ( !addon.installed || !addon.isCanUse ) }]">
           <div class="switcher">
             <div class="bookit-switch">
-              <input type="checkbox" @change="checkWoocommerce($event)" v-model="settings_object.payments.woocommerce.enabled" :disabled="!addon.installed">
+              <input type="checkbox" @change="checkWoocommerce($event)" v-model="settings_object.payments.woocommerce.enabled" :disabled="( !addon.installed || !addon.isCanUse )">
               <label></label>
             </div>
           </div>
@@ -22,13 +22,13 @@ export default {
         <div v-if="settings_object.payments.woocommerce.enabled || ( !addon.installed || !addon.isCanUse ) " :class="['setting-row pt-30 no-border pb-10', {'not-active': ( !addon.installed || ( addon.installed && ( !addon.isCanUse || !addon.active) ) ) }]">
           <div class="form-group small">
             <label>{{ translations.woocommerce_product }}</label>
-            <select v-model="settings_object.payments.woocommerce.product_id" required :disabled="!addon.installed">
+            <select v-model="settings_object.payments.woocommerce.product_id" required :disabled="( !addon.installed || !addon.isCanUse )">
               <option v-for="product in payment.woocommerce_products" :value="product.id">{{ product.title }}</option>
             </select>
           </div>
           <div class="form-group small">
             <label>{{ translations.woocommerce_title }}</label>
-            <input type="text" v-model="settings_object.payments.woocommerce.custom_title" :disabled="!addon.installed">
+            <input type="text" v-model="settings_object.payments.woocommerce.custom_title" :disabled="( !addon.installed || !addon.isCanUse )">
           </div>
         </div>
         <div v-if="settings_object.payments.woocommerce.enabled || ( !addon.installed || !addon.isCanUse ) " :class="['setting-row pt-10', {'not-active': ( !addon.installed || ( addon.installed && ( !addon.isCanUse || !addon.active) ) ) }]">

@@ -21,8 +21,8 @@ abstract class BookitUpdateCallbacks {
 		/**
 		 * Add ICON column to Services table.
 		 */
-		if ( ! $wpdb->get_var( sprintf( "SHOW COLUMNS FROM `%s` LIKE 'icon_id';", Services::_table() ) ) ) { // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-			$wpdb->query( sprintf( 'ALTER TABLE `%s` ADD `icon_id` INT NULL;', Services::_table() ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		if ( ! $wpdb->get_var( sprintf( "SHOW COLUMNS FROM `%s` LIKE 'icon_id';", esc_sql( Services::_table() ) ) ) ) { // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			$wpdb->query( sprintf( 'ALTER TABLE `%s` ADD `icon_id` INT NULL;', esc_sql( Services::_table() ) ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
 	}
 
@@ -66,8 +66,8 @@ abstract class BookitUpdateCallbacks {
 	 */
 	public static function add_appointment_notes() {
 		global $wpdb;
-		if ( ! $wpdb->get_var( sprintf( "SHOW COLUMNS FROM `%s` LIKE 'notes';", Appointments::_table() ) ) ) { // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-			$wpdb->query( sprintf( 'ALTER TABLE `%s` ADD `notes` longtext DEFAULT NULL;', Appointments::_table() ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		if ( ! $wpdb->get_var( sprintf( "SHOW COLUMNS FROM `%s` LIKE 'notes';", esc_sql( Appointments::_table() ) ) ) ) { // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			$wpdb->query( sprintf( 'ALTER TABLE `%s` ADD `notes` longtext DEFAULT NULL;', esc_sql( Appointments::_table() ) ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
 	}
 
@@ -113,12 +113,12 @@ abstract class BookitUpdateCallbacks {
 	 */
 	public static function add_appointment_table_fields() {
 		global $wpdb;
-		if ( ! $wpdb->get_var( sprintf( "SHOW COLUMNS FROM `%s` LIKE 'created_from';", Appointments::_table() ) ) ) { // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-			$wpdb->query( sprintf( "ALTER TABLE `%s` ADD `created_from` ENUM( 'front', 'back' ) NOT NULL DEFAULT 'front';", Appointments::_table() ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		if ( ! $wpdb->get_var( sprintf( "SHOW COLUMNS FROM `%s` LIKE 'created_from';", esc_sql( Appointments::_table() ) ) ) ) { // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			$wpdb->query( sprintf( "ALTER TABLE `%s` ADD `created_from` ENUM( 'front', 'back' ) NOT NULL DEFAULT 'front';", esc_sql( Appointments::_table() ) ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
 
-		if ( ! $wpdb->get_var( sprintf( "SHOW COLUMNS FROM `%s` LIKE 'created_at';", Appointments::_table() ) ) ) { // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-			$wpdb->query( sprintf( 'ALTER TABLE `%s` ADD `created_at` DATETIME NOT NULL;', Appointments::_table() ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		if ( ! $wpdb->get_var( sprintf( "SHOW COLUMNS FROM `%s` LIKE 'created_at';", esc_sql( Appointments::_table() ) ) ) ) { // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			$wpdb->query( sprintf( 'ALTER TABLE `%s` ADD `created_at` DATETIME NOT NULL;', esc_sql( Appointments::_table() ) ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
 	}
 
@@ -128,12 +128,12 @@ abstract class BookitUpdateCallbacks {
 	 */
 	public static function drop_appointment_table_payment_fields() {
 		global $wpdb;
-		if ( $wpdb->get_var( sprintf( "SHOW COLUMNS FROM `%s` LIKE 'payment_method';", Appointments::_table() ) ) ) { // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-			$wpdb->query( sprintf( 'ALTER TABLE `%s` DROP  COLUMN `payment_method`;', Appointments::_table() ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		if ( $wpdb->get_var( sprintf( "SHOW COLUMNS FROM `%s` LIKE 'payment_method';", esc_sql( Appointments::_table() ) ) ) ) { // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			$wpdb->query( sprintf( 'ALTER TABLE `%s` DROP  COLUMN `payment_method`;', esc_sql( Appointments::_table() ) ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
 
-		if ( $wpdb->get_var( sprintf( "SHOW COLUMNS FROM `%s` LIKE 'payment_status';", Appointments::_table() ) ) ) { // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-			$wpdb->query( sprintf( 'ALTER TABLE `%s` DROP  COLUMN `payment_status`;', Appointments::_table() ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		if ( $wpdb->get_var( sprintf( "SHOW COLUMNS FROM `%s` LIKE 'payment_status';", esc_sql( Appointments::_table() ) ) ) ) { // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			$wpdb->query( sprintf( 'ALTER TABLE `%s` DROP  COLUMN `payment_status`;', esc_sql( Appointments::_table() ) ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
 	}
 
@@ -178,11 +178,11 @@ abstract class BookitUpdateCallbacks {
 	/** 2.1.5 */
 	public static function update_payment_type_enum_field() {
 		global $wpdb;
-		if ( $wpdb->get_var( sprintf( "SHOW COLUMNS FROM `%s` LIKE 'type';", Payments::_table() ) ) ) { // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		if ( $wpdb->get_var( sprintf( "SHOW COLUMNS FROM `%s` LIKE 'type';", esc_sql( Payments::_table() ) ) ) ) { // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 			$wpdb->query(
 				sprintf(
 					"ALTER TABLE `%s` MODIFY `type` ENUM( 'locally', 'stripeConnect', 'paypal', 'stripe', 'woocommerce', 'free' );",
-					Payments::_table() // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+					esc_sql( Payments::_table() ) // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 				)
 			);
 		}
@@ -206,8 +206,8 @@ abstract class BookitUpdateCallbacks {
 	/** 2.1.7 */
 	public static function add_wp_user_to_staff() {
 		global $wpdb;
-		if ( ! $wpdb->get_var( sprintf( "SHOW COLUMNS FROM `%s` LIKE 'wp_user_id';", Staff::_table() ) ) ) { // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-			$wpdb->query( sprintf( 'ALTER TABLE `%s` ADD `wp_user_id` BIGINT(20);', Staff::_table() ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		if ( ! $wpdb->get_var( sprintf( "SHOW COLUMNS FROM `%s` LIKE 'wp_user_id';", esc_sql( Staff::_table() ) ) ) ) { // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			$wpdb->query( sprintf( 'ALTER TABLE `%s` ADD `wp_user_id` BIGINT(20);', esc_sql( Staff::_table() ) ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
 	}
 

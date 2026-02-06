@@ -8,7 +8,7 @@
  * License: GNU General Public License v2 or later
  * License URI: http://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: bookit
- * Version: 2.5.0
+ * Version: 2.5.2
  * Requires at least: 6.3
  * Requires PHP:      7.4
  */
@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'BOOKIT_VERSION', '2.5.1' );
+define( 'BOOKIT_VERSION', '2.5.2' );
 define( 'BOOKIT_DB_VERSION', '2.2.5' );
 define( 'BOOKIT_FILE', __FILE__ );
 define( 'BOOKIT_PATH', dirname( BOOKIT_FILE ) );
@@ -68,7 +68,7 @@ if ( ! function_exists( 'bookit_fs' ) ) {
 	call_user_func( array( 'Bookit\Classes\Base\Plugin', 'run' ) );
 }
 
-function my_after_upgrade_addon_sync( $prev_version, $new_version ) {
+function bookit_after_upgrade_addon_sync( $prev_version, $new_version ) {
 	if ( '2.1.7' === $new_version ) {
 		// The true purges the cache.
 		bookit_fs()->get_addons( true );
@@ -76,7 +76,7 @@ function my_after_upgrade_addon_sync( $prev_version, $new_version ) {
 }
 
 $bookit_fs = bookit_fs();
-$bookit_fs->add_action( 'plugin_version_update', 'my_after_upgrade_addon_sync' );
+$bookit_fs->add_action( 'plugin_version_update', 'bookit_after_upgrade_addon_sync' );
 $bookit_fs->add_action( 'after_uninstall', array( \Bookit\Classes\Base\Plugin::class, 'uninstall' ) );
 
 /**

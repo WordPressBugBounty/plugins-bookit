@@ -12,7 +12,7 @@ export default {
                 <input type="checkbox" v-model="settings_object.payments.paypal.enabled">
                 <label></label>
               </div>
-              <span class="label for-switcher" v-html="translations.enabled"></span>
+              <span class="label for-switcher" v-html=" settings_object.payments.paypal.enabled ? translations.enabled : translations.disabled"></span>
             </div>
           </div>
         </div>
@@ -28,7 +28,7 @@ export default {
                 </a>
               </div>
               <div class="code">
-                <code>{{ ipn_url }}</code>
+                <code ref="ipnUrl">{{ ipn_url }}</code>
                 <button class="button-copy" type="button" @click="copyURL()">
                   <i class="copy-icon"></i>{{ translations.copy }}
                 </button>
@@ -87,8 +87,8 @@ export default {
 	methods: {
 		copyURL() {
 			var input = document.body.appendChild( document.createElement( "input" ) );
-			input.value = this.$refs.ipnLink.href;
-			;
+			input.value = this.$refs.ipnUrl.textContent;
+
 			input.select();
 			document.execCommand( 'copy' );
 			input.parentNode.removeChild( input );

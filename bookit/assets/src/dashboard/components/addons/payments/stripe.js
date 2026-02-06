@@ -19,11 +19,11 @@ export default {
         <div v-if="settings_object.payments.stripe.enabled || ( !addon.installed || !addon.isCanUse ) " :class="['setting-row pt-10', {'not-active': ( !addon.installed || ( addon.installed && ( !addon.isCanUse || !addon.active) ) ) }]">
           <div class="form-group small">
             <label>{{ translations.stripe_publish_key }}</label>
-            <input type="text" v-model="settings_object.payments.stripe.publish_key" required :disabled="!addon.installed">
+            <input type="text" v-model="settings_object.payments.stripe.publish_key" required :disabled="( !addon.installed || !addon.isCanUse )">
           </div>
           <div class="form-group small">
             <label>{{ translations.stripe_secret_key }}</label>
-            <input type="text" v-model="settings_object.payments.stripe.secret_key" required :disabled="!addon.installed">
+            <input type="text" v-model="settings_object.payments.stripe.secret_key" required :disabled="( !addon.installed || !addon.isCanUse )">
           </div>
         </div>
       </div>

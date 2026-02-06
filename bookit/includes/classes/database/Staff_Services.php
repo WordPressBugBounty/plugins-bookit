@@ -33,17 +33,17 @@ class Staff_Services extends DatabaseModel {
 
 		return $wpdb->get_results(
 			sprintf(
-				'SELECT %1$s.staff_id, 
-						%2$s.id as serviceId,
-						%1$s.price, 
-						%2$s.title
-						FROM %1$s 
-						LEFT JOIN %2$s ON %1$s.service_id = %2$s.id 
-						WHERE %1$s.staff_id IN ( %3$s )
-						ORDER BY %1$s.staff_id',
-				self::_table(), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-				Services::_table(), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-				implode( ',', $staffIds ) // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				'SELECT `%1$s`.staff_id,
+						`%2$s`.id as serviceId,
+						`%1$s`.price,
+						`%2$s`.title
+						FROM `%1$s`
+						LEFT JOIN `%2$s` ON `%1$s`.service_id = `%2$s`.id
+						WHERE `%1$s`.staff_id IN ( %3$s )
+						ORDER BY `%1$s`.staff_id',
+				esc_sql( self::_table() ), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				esc_sql( Services::_table() ), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				esc_sql( implode( ',', $staffIds ) ) // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 			),
 			ARRAY_A
 		);
@@ -55,11 +55,11 @@ class Staff_Services extends DatabaseModel {
 	public static function get_service_price_by_staff( $service_id, $staff_id ) {
 		global $wpdb;
 		$sql = sprintf(
-			'SELECT %1$s.price
-					FROM %1$s
-					WHERE %1$s.staff_id = %%d 
-					AND %1$s.service_id = %%d',
-			self::_table()
+			'SELECT `%1$s`.price
+					FROM `%1$s`
+					WHERE `%1$s`.staff_id = %%d
+					AND `%1$s`.service_id = %%d',
+			esc_sql( self::_table() )
 		);
 		return $wpdb->get_var(
 			$wpdb->prepare(

@@ -7,51 +7,51 @@ namespace Composer\Autoload;
 class ComposerStaticInit92c014a3d89972e0b0b283425e48bbd7
 {
     public static $prefixLengthsPsr4 = array (
-        'l' => 
+        'l' =>
         array (
             'lucatume\\DI52\\' => 14,
         ),
-        'S' => 
+        'S' =>
         array (
             'StellarWP\\ContainerContract\\' => 28,
             'StellarWP\\Arrays\\' => 17,
         ),
-        'P' => 
+        'P' =>
         array (
             'Psr\\Container\\' => 14,
         ),
-        'I' => 
+        'I' =>
         array (
             'Illuminate\\Collections\\' => 23,
         ),
-        'B' => 
+        'B' =>
         array (
             'Bookit\\' => 7,
         ),
     );
 
     public static $prefixDirsPsr4 = array (
-        'lucatume\\DI52\\' => 
+        'lucatume\\DI52\\' =>
         array (
             0 => __DIR__ . '/..' . '/lucatume/di52/src',
         ),
-        'StellarWP\\ContainerContract\\' => 
+        'StellarWP\\ContainerContract\\' =>
         array (
             0 => __DIR__ . '/..' . '/stellarwp/container-contract/src',
         ),
-        'StellarWP\\Arrays\\' => 
+        'StellarWP\\Arrays\\' =>
         array (
             0 => __DIR__ . '/..' . '/stellarwp/arrays/src/Arrays',
         ),
-        'Psr\\Container\\' => 
+        'Psr\\Container\\' =>
         array (
             0 => __DIR__ . '/..' . '/psr/container/src',
         ),
-        'Illuminate\\Collections\\' => 
+        'Illuminate\\Collections\\' =>
         array (
             0 => __DIR__ . '/..' . '/vendor-prefixed/illuminate/collections',
         ),
-        'Bookit\\' => 
+        'Bookit\\' =>
         array (
             0 => __DIR__ . '/../..' . '/src/Bookit',
         ),

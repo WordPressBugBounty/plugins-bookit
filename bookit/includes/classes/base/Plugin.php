@@ -157,6 +157,13 @@ class Plugin {
 			'data' => $addonClass::getAddonData(),
 		);
 
-		return $info;
+		/**
+		 * Filter an add-on plugin info.
+		 *
+		 * @since 2.5.2
+		 *
+		 * @param array<string|mixed> $info The add-on info.
+		 */
+		return apply_filters( 'bookit_addon_info', $info );
 	}
 }

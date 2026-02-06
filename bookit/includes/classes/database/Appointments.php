@@ -154,10 +154,10 @@ class Appointments extends DatabaseModel {
 	public static function customer_appointments( int $customer_id ) {
 	    global $wpdb;
 	    $sql = sprintf(
-	        'SELECT %1$s.*
-	                FROM %1$s
-	                WHERE customer_id = %%d ORDER BY %1$s.id ASC',
-	        self::_table()
+	        'SELECT `%1$s`.*
+	                FROM `%1$s`
+	                WHERE customer_id = %%d ORDER BY `%1$s`.id ASC',
+	        esc_sql( self::_table() )
 	    );
 	    return $wpdb->get_results( $wpdb->prepare( $sql, $customer_id ) );
 	}
@@ -170,12 +170,12 @@ class Appointments extends DatabaseModel {
 	public static function category_appointments( $category_id ) {
 		global $wpdb;
 		$sql = sprintf(
-			'SELECT %1$s.*
-					FROM %1$s
-					LEFT JOIN %2$s ON %1$s.service_id = %2$s.id
-					WHERE %2$s.category_id = %%d',
-			self::_table(),
-			Services::_table()
+			'SELECT `%1$s`.*
+					FROM `%1$s`
+					LEFT JOIN `%2$s` ON `%1$s`.service_id = `%2$s`.id
+					WHERE `%2$s`.category_id = %%d',
+	        esc_sql( self::_table() ),
+			esc_sql( Services::_table() )
 		);
 		return $wpdb->get_results( $wpdb->prepare( $sql, intval( $category_id ) ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 	}
@@ -187,10 +187,10 @@ class Appointments extends DatabaseModel {
 	public static function service_appointments( int $service_id ) {
 	    global $wpdb;
 	    $sql = sprintf(
-	        'SELECT %1$s.*
-	                FROM %1$s
-	                WHERE service_id = %%d ORDER BY %1$s.id ASC',
-	        self::_table()
+	        'SELECT `%1$s`.*
+	                FROM `%1$s`
+	                WHERE service_id = %%d ORDER BY `%1$s`.id ASC',
+	        esc_sql( self::_table() )
 	    );
 	    return $wpdb->get_results( $wpdb->prepare( $sql, $service_id ) );
 	}
@@ -203,10 +203,10 @@ class Appointments extends DatabaseModel {
 	public static function staff_appointments( $staff_id ) {
 		global $wpdb;
 		$sql = sprintf(
-		  'SELECT %1$s.*
-		          FROM %1$s
-		          WHERE staff_id = %%d ORDER BY %1$s.id ASC',
-		  self::_table()
+		  'SELECT `%1$s`.*
+		          FROM `%1$s`
+		          WHERE staff_id = %%d ORDER BY `%1$s`.id ASC',
+		  esc_sql( self::_table() )
 		);
 
 		return $wpdb->get_results( $wpdb->prepare( $sql, $staff_id ) );
@@ -228,42 +228,50 @@ class Appointments extends DatabaseModel {
 
 		$search = '';
 		if ( ! empty( $filter['search'] ) ) {
-			$search = ' AND (
-			' . Customers::_table() . " .phone like '%{$filter['search']}%' 
-			OR " . Customers::_table() . " .full_name like '%{$filter['search']}%' 
-			OR " . Customers::_table() . " .email like '%{$filter['search']}%' )";
+			$search = sprintf(
+				" AND (
+				`%s`.phone like '%%%s%%'
+				OR `%s`.full_name like '%%%s%%'
+				OR `%s`.email like '%%%s%%' )",
+				esc_sql( Customers::_table() ),
+				esc_sql( $filter['search'] ),
+				esc_sql( Customers::_table() ),
+				esc_sql( $filter['search'] ),
+				esc_sql( Customers::_table() ),
+				esc_sql( $filter['search'] )
+			);
 		}
 
 		$sql = sprintf(
-			'SELECT 
-		                %1$s.*,%5$s.type as payment_method,
-		                %5$s.status as payment_status,
-		                %5$s.total as total,
-		                %2$s.full_name as customer_name,
-		                %2$s.email as customer_email,
-		                %2$s.phone as customer_phone,
-		                %3$s.full_name as staff_name,
-		                %4$s.title as service_name
-			FROM %1$s
-			LEFT JOIN %2$s ON %1$s.customer_id = %2$s.id 
-			LEFT JOIN %3$s ON %1$s.staff_id = %3$s.id 
-			LEFT JOIN %4$s ON %1$s.service_id = %4$s.id 
-			LEFT JOIN %5$s ON %1$s.id = %5$s.appointment_id 
-			WHERE %1$s.status != "%6$s"
-			%7$s %8$s %9$s %10$s ORDER BY %1$s.%11$s %12$s 
+			'SELECT
+		                `%1$s`.*,`%5$s`.type as payment_method,
+		                `%5$s`.status as payment_status,
+		                `%5$s`.total as total,
+		                `%2$s`.full_name as customer_name,
+		                `%2$s`.email as customer_email,
+		                `%2$s`.phone as customer_phone,
+		                `%3$s`.full_name as staff_name,
+		                `%4$s`.title as service_name
+			FROM `%1$s`
+			LEFT JOIN `%2$s` ON `%1$s`.customer_id = `%2$s`.id
+			LEFT JOIN `%3$s` ON `%1$s`.staff_id = `%3$s`.id
+			LEFT JOIN `%4$s` ON `%1$s`.service_id = `%4$s`.id
+			LEFT JOIN `%5$s` ON `%1$s`.id = `%5$s`.appointment_id
+			WHERE `%1$s`.status != "%6$s"
+			%7$s %8$s %9$s %10$s ORDER BY `%1$s`.`%11$s` %12$s
 			LIMIT %13$d OFFSET %14$d',
-			self::_table(),
-			Customers::_table(),
-			Staff::_table(),
-			Services::_table(),
-			Payments::_table(),
-			self::$delete,
-			( ! empty( $status ) ) ? ' AND ' . self::_table() . " .status = '{$status}'" : '',
-			( ! empty( $filter['start'] ) ) ? ' AND ' . self::_table() . " .start_time >= {$filter['start']}" : '',
-			( ! empty( $filter['end'] ) ) ? ' AND ' . self::_table() . " .end_time <= {$filter['end']}" : '',
+			esc_sql( self::_table() ),
+			esc_sql( Customers::_table() ),
+			esc_sql( Staff::_table() ),
+			esc_sql( Services::_table() ),
+			esc_sql( Payments::_table() ),
+			esc_sql( self::$delete ),
+			( ! empty( $status ) ) ? sprintf( " AND `%s`.status = '%s'", esc_sql( self::_table() ), esc_sql( $status ) ) : '',
+			( ! empty( $filter['start'] ) ) ? sprintf( " AND `%s`.start_time >= %d", esc_sql( self::_table() ), intval( $filter['start'] ) ) : '',
+			( ! empty( $filter['end'] ) ) ? sprintf( " AND `%s`.end_time <= %d", esc_sql( self::_table() ), intval( $filter['end'] ) ) : '',
 			$search,
-			( empty( $sort ) ) ? static::$primary_key : $sort,
-			( empty( $order ) ) ? 'DESC' : $order,
+			( empty( $sort ) ) ? esc_sql( static::$primary_key ) : esc_sql( $sort ),
+			( empty( $order ) ) ? 'DESC' : esc_sql( $order ),
 			intval( $limit ),
 			intval( $offset )
 		);
@@ -280,26 +288,26 @@ class Appointments extends DatabaseModel {
 		global $wpdb;
 		return $wpdb->get_results(
 			sprintf(
-				'SELECT %1$s.*, 
-		                %5$s.type as payment_method,
-		                %5$s.status as payment_status,
-		                %5$s.total as total,
-		                %2$s.full_name as customer,
-		                %2$s.phone as customer_phone,
-		                %3$s.full_name as staff,
-		                %4$s.title as service
-				FROM %1$s
-				LEFT JOIN %2$s ON %1$s.customer_id = %2$s.id 
-				LEFT JOIN %3$s ON %1$s.staff_id = %3$s.id 
-				LEFT JOIN %4$s ON %1$s.service_id = %4$s.id 
-				LEFT JOIN %5$s ON %1$s.id = %5$s.appointment_id
-				ORDER BY %1$s.%6$s DESC',
-				self::_table(), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-				Customers::_table(), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-				Staff::_table(), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-				Services::_table(), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-				Payments::_table(), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-				static::$primary_key // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				'SELECT `%1$s`.*,
+		                `%5$s`.type as payment_method,
+		                `%5$s`.status as payment_status,
+		                `%5$s`.total as total,
+		                `%2$s`.full_name as customer,
+		                `%2$s`.phone as customer_phone,
+		                `%3$s`.full_name as staff,
+		                `%4$s`.title as service
+				FROM `%1$s`
+				LEFT JOIN `%2$s` ON `%1$s`.customer_id = `%2$s`.id
+				LEFT JOIN `%3$s` ON `%1$s`.staff_id = `%3$s`.id
+				LEFT JOIN `%4$s` ON `%1$s`.service_id = `%4$s`.id
+				LEFT JOIN `%5$s` ON `%1$s`.id = `%5$s`.appointment_id
+				ORDER BY `%1$s`.`%6$s` DESC',
+				esc_sql( self::_table() ), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				esc_sql( Customers::_table() ), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				esc_sql( Staff::_table() ), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				esc_sql( Services::_table() ), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				esc_sql( Payments::_table() ), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				esc_sql( static::$primary_key ) // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 			),
 			ARRAY_A
 		);
@@ -313,16 +321,16 @@ class Appointments extends DatabaseModel {
 	public static function checkAppointment( $data ) {
 		global $wpdb;
 		$sql = sprintf(
-			'SELECT %1$s.id FROM %s 
+			'SELECT `%1$s`.id FROM `%1$s`
 					WHERE staff_id = %%d
 					AND service_id = %%d
 					AND status != "%2$s"
 					AND status != "%3$s"
 					AND date_timestamp = %%d
 					AND ( start_time <= %%d AND end_time >= %%d )',
-			self::_table(),
-			self::$cancelled,
-			self::$delete
+			esc_sql( self::_table() ),
+			esc_sql( self::$cancelled ),
+			esc_sql( self::$delete )
 		);
 		return $wpdb->get_var(
 			$wpdb->prepare(
@@ -344,13 +352,13 @@ class Appointments extends DatabaseModel {
 	public static function month_appointments( $data ) {
 		global $wpdb;
 		$sql = sprintf(
-			'SELECT date_timestamp, COUNT(*) appointments FROM %s 
+			'SELECT date_timestamp, COUNT(*) appointments FROM `%s`
 					WHERE service_id = %%d AND status NOT IN ( "%2$s", "%3$s" )
 					AND ( ( date_timestamp = %%d AND start_time >= %%d ) OR date_timestamp BETWEEN %%d AND %%d )
 					GROUP BY date_timestamp',
-			self::_table(),
-			self::$cancelled,
-			self::$delete
+			esc_sql( self::_table() ),
+			esc_sql( self::$cancelled ),
+			esc_sql( self::$delete )
 		);
 		return $wpdb->get_results(
 			$wpdb->prepare(
@@ -372,12 +380,12 @@ class Appointments extends DatabaseModel {
 	public static function day_appointments( $data ) {
 		global $wpdb;
 		$sql = sprintf(
-			'SELECT * FROM %s WHERE date_timestamp = %%d %s %s AND status NOT IN ( "%4$s", "%5$s" ) ORDER BY %1$s.%6$s',
-			self::_table(),
-			( ! empty( $data['service_id'] ) ) ? "AND service_id = {$data['service_id']}" : '',
-			( ! empty( $data['staff_id'] ) ) ? "AND staff_id = {$data['staff_id']}" : '',
-			self::$cancelled,
-			self::$delete,
+			'SELECT * FROM `%s` WHERE date_timestamp = %%d %s %s AND status NOT IN ( "%4$s", "%5$s" ) ORDER BY `%1$s`.`%6$s`',
+			esc_sql( self::_table() ),
+			( ! empty( $data['service_id'] ) ) ? sprintf( "AND service_id = %d", intval( $data['service_id'] ) ) : '',
+			( ! empty( $data['staff_id'] ) ) ? sprintf( "AND staff_id = %d", intval( $data['staff_id'] ) ) : '',
+			esc_sql( self::$cancelled ),
+			esc_sql( self::$delete ),
 			'start_time'
 		);
 		return $wpdb->get_results(
@@ -396,9 +404,9 @@ class Appointments extends DatabaseModel {
 		global $wpdb;
 		$date_utc = new \DateTime( 'now', new \DateTimeZone( 'UTC' ) );
 		$sql      = sprintf(
-			'SELECT COUNT(*) FROM %s WHERE status = "%s" AND start_time >= %%d',
-			self::_table(),
-			self::$pending
+			'SELECT COUNT(*) FROM `%s` WHERE status = "%s" AND start_time >= %%d',
+			esc_sql( self::_table() ),
+			esc_sql( self::$pending )
 		);
 		return $wpdb->get_var(
 			$wpdb->prepare(
@@ -418,21 +426,29 @@ class Appointments extends DatabaseModel {
 
 		$search = '';
 		if ( ! empty( $filter['search'] ) ) {
-			$search = ' AND (
-			' . Customers::_table() . " .phone like '%{$filter['search']}%' 
-			OR " . Customers::_table() . " .full_name like '%{$filter['search']}%' 
-			OR " . Customers::_table() . " .email like '%{$filter['search']}%' )";
+			$search = sprintf(
+				" AND (
+				`%s`.phone like '%%%s%%'
+				OR `%s`.full_name like '%%%s%%'
+				OR `%s`.email like '%%%s%%' )",
+				esc_sql( Customers::_table() ),
+				esc_sql( $filter['search'] ),
+				esc_sql( Customers::_table() ),
+				esc_sql( $filter['search'] ),
+				esc_sql( Customers::_table() ),
+				esc_sql( $filter['search'] )
+			);
 		}
 
 		return $wpdb->get_var(
 			sprintf(
-				'SELECT COUNT(*) FROM %1$s LEFT JOIN %2$s ON %1$s.customer_id = %2$s.id WHERE %1$s.status != "%3$s" %4$s %5$s %6$s %7$s',
-				self::_table(), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-				Customers::_table(), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-				self::$delete, // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-				( ! empty( $status ) ) ? " AND status = '{$status}'" : '', // phpcs:ignore
-				( ! empty( $filter['start'] ) ) ? ' AND ' . self::_table() . " .start_time >= {$filter['start']}" : '', // phpcs:ignore
-				( ! empty( $filter['end'] ) ) ? ' AND ' . self::_table() . " .end_time <= {$filter['end']}" : '', // phpcs:ignore
+				'SELECT COUNT(*) FROM `%1$s` LEFT JOIN `%2$s` ON `%1$s`.customer_id = `%2$s`.id WHERE `%1$s`.status != "%3$s" %4$s %5$s %6$s %7$s',
+				esc_sql( self::_table() ), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				esc_sql( Customers::_table() ), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				esc_sql( self::$delete ), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				( ! empty( $status ) ) ? sprintf( " AND status = '%s'", esc_sql( $status ) ) : '', // phpcs:ignore
+				( ! empty( $filter['start'] ) ) ? sprintf( " AND `%s`.start_time >= %d", esc_sql( self::_table() ), intval( $filter['start'] ) ) : '', // phpcs:ignore
+				( ! empty( $filter['end'] ) ) ? sprintf( " AND `%s`.end_time <= %d", esc_sql( self::_table() ), intval( $filter['end'] ) ) : '', // phpcs:ignore
 				$search // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 			)
 		);
@@ -477,19 +493,19 @@ class Appointments extends DatabaseModel {
 		                %4$s.total as total,
 		                %4$s.type as payment_method,
 		                %4$s.status as payment_status,
-		                %4$s.id as payment_id,
-		                %5$s.title as service_name
-			FROM %1$s
-			LEFT JOIN %2$s ON %1$s.customer_id = %2$s.id 
-			LEFT JOIN %3$s ON %1$s.staff_id = %3$s.id 
-			LEFT JOIN %4$s ON %1$s.id = %4$s.appointment_id
-			LEFT JOIN %5$s ON %1$s.service_id = %5$s.id
-			WHERE %1$s.id = %%d',
-			self::_table(),
-			Customers::_table(),
-			Staff::_table(),
-			Payments::_table(),
-			Services::_table()
+		                `%4$s`.id as payment_id,
+		                `%5$s`.title as service_name
+			FROM `%1$s`
+			LEFT JOIN `%2$s` ON `%1$s`.customer_id = `%2$s`.id
+			LEFT JOIN `%3$s` ON `%1$s`.staff_id = `%3$s`.id
+			LEFT JOIN `%4$s` ON `%1$s`.id = `%4$s`.appointment_id
+			LEFT JOIN `%5$s` ON `%1$s`.service_id = `%5$s`.id
+			WHERE `%1$s`.id = %%d',
+			esc_sql( self::_table() ),
+			esc_sql( Customers::_table() ),
+			esc_sql( Staff::_table() ),
+			esc_sql( Payments::_table() ),
+			esc_sql( Services::_table() )
 		);
 
 		return $wpdb->get_row( $wpdb->prepare( $sql, intval( $id ) ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
@@ -502,34 +518,34 @@ class Appointments extends DatabaseModel {
 	public static function appointments_by_date_full( $start, $end, $filter_data = array() ) {
 		global $wpdb;
 		$sql = sprintf(
-			'SELECT  
-               	 	%1$s.*,
-					%2$s.title as service,
-	                %2$s.icon_id as icon,
-	                %3$s.email as customer_email,
-	                %3$s.full_name as customer_name,
-	                %3$s.phone as customer_phone,
-	                %4$s.full_name as staff_name,
-	                %5$s.type as payment_method,
-	                %5$s.status as payment_status,
-	                %5$s.total as total
-			FROM %1$s
-				LEFT JOIN %2$s ON %1$s.service_id = %2$s.id
-				LEFT JOIN %3$s ON %1$s.customer_id = %3$s.id 
-				LEFT JOIN %4$s ON %1$s.staff_id = %4$s.id 
-				LEFT JOIN %5$s ON %1$s.id = %5$s.appointment_id
-			WHERE %1$s.status != "%6$s" AND date_timestamp BETWEEN %%d AND %%d
+			'SELECT
+               	 	`%1$s`.*,
+					`%2$s`.title as service,
+	                `%2$s`.icon_id as icon,
+	                `%3$s`.email as customer_email,
+	                `%3$s`.full_name as customer_name,
+	                `%3$s`.phone as customer_phone,
+	                `%4$s`.full_name as staff_name,
+	                `%5$s`.type as payment_method,
+	                `%5$s`.status as payment_status,
+	                `%5$s`.total as total
+			FROM `%1$s`
+				LEFT JOIN `%2$s` ON `%1$s`.service_id = `%2$s`.id
+				LEFT JOIN `%3$s` ON `%1$s`.customer_id = `%3$s`.id
+				LEFT JOIN `%4$s` ON `%1$s`.staff_id = `%4$s`.id
+				LEFT JOIN `%5$s` ON `%1$s`.id = `%5$s`.appointment_id
+			WHERE `%1$s`.status != "%6$s" AND date_timestamp BETWEEN %%d AND %%d
 			%7$s %8$s %9$s
-			ORDER BY %1$s.start_time',
-			self::_table(),
-			Services::_table(),
-			Customers::_table(),
-			Staff::_table(),
-			Payments::_table(),
-			self::$delete,
-			( ! empty( $filter_data['service_ids'] ) ) ? "AND service_id IN ( {$filter_data['service_ids']} )" : '',
-			( ! empty( $filter_data['staff_id'] ) ) ? "AND staff_id = {$filter_data['staff_id']}" : '',
-			( ! empty( $filter_data['status'] ) ) ? sprintf( "AND %s.status = '{$filter_data['status']}'", self::_table() ) : ''
+			ORDER BY `%1$s`.start_time',
+			esc_sql( self::_table() ),
+			esc_sql( Services::_table() ),
+			esc_sql( Customers::_table() ),
+			esc_sql( Staff::_table() ),
+			esc_sql( Payments::_table() ),
+			esc_sql( self::$delete ),
+			( ! empty( $filter_data['service_ids'] ) ) ? sprintf( "AND service_id IN ( %s )", esc_sql( $filter_data['service_ids'] ) ) : '',
+			( ! empty( $filter_data['staff_id'] ) ) ? sprintf( "AND staff_id = %d", intval( $filter_data['staff_id'] ) ) : '',
+			( ! empty( $filter_data['status'] ) ) ? sprintf( "AND `%s`.status = '%s'", esc_sql( self::_table() ), esc_sql( $filter_data['status'] ) ) : ''
 		);
 
 		return $wpdb->get_results( $wpdb->prepare( $sql, intval( $start ), intval( $end ) ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
@@ -543,14 +559,14 @@ class Appointments extends DatabaseModel {
 		global $wpdb;
 
 		$sql = sprintf(
-			'SELECT COUNT(%1$s.id)
-					FROM %1$s
+			'SELECT COUNT(`%1$s`.id)
+					FROM `%1$s`
 					WHERE start_time > %%d
 					%2$s %3$s %4$s',
-			self::_table(),
-			( ! empty( $service_ids ) ) ? "AND service_id IN ( {$service_ids} )" : '',
-			( ! empty( $staff_ids ) ) ? "AND staff_id IN ( {$staff_ids} )" : '',
-			( ! empty( $customer_ids ) ) ? "AND customer_id IN ( {$customer_ids} )" : ''
+			esc_sql( self::_table() ),
+			( ! empty( $service_ids ) ) ? sprintf( "AND service_id IN ( %s )", esc_sql( $service_ids ) ) : '',
+			( ! empty( $staff_ids ) ) ? sprintf( "AND staff_id IN ( %s )", esc_sql( $staff_ids ) ) : '',
+			( ! empty( $customer_ids ) ) ? sprintf( "AND customer_id IN ( %s )", esc_sql( $customer_ids ) ) : ''
 		);
 
 		$now = current_time( 'timestamp' ); // phpcs:ignore WordPress.DateTime.CurrentTimeTimestamp.Requested

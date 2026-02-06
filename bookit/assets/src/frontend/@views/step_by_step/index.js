@@ -32,12 +32,12 @@ export default {
                 {{ translations.continue }}<i class="right-icon"></i>
               </button>
             </div>
-            
+
             <result_header v-else-if="currentStepKey == 'result'"></result_header>
           </div>
         </div>
         <!-- HEADER PART END -->
-        
+
         <div :class="['calendar-content',{'no-border': showDateTime || currentStepKey == 'result'}, {'no-footer': currentStepKey != 'result'} ]">
           <div v-if="loading" class="loader">
             <div class="loading"><div v-for="n in 9"></div></div>
@@ -358,11 +358,10 @@ export default {
           let response = res.data;
 
           if ( response.success ) {
-            var appointment          = Object.assign({}, this.appointment);
+            var appointment          = Object.assign({}, this.appointment, response.data.appointment);
             appointment.user_id      = response.data.customer.wp_user_id;
             appointment.nonce        = response.data.nonce;
             appointment.redirect_url = response.data.redirect_url;
-            appointment.price        = response.data.appointment.price;
 
             this.appointment = appointment;
 

@@ -84,6 +84,15 @@ class StaffController extends DashboardController {
 	}
 
 
+	/**
+	 * Parsers and sanitizes staff data to array.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array<int, array<string, mixed>> $staff Staff data to parse.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
 	public static function parseStaff( $staff ) {
 		$result = array();
 		foreach ( $staff as $key => $employee ) {
@@ -91,6 +100,20 @@ class StaffController extends DashboardController {
 			$item['full_name']      = stripslashes( $employee['full_name'] );
 			$item['staff_services'] = json_decode( $employee['staff_services'] ?? '', true ) ?: [];
 			$item['working_hours']  = json_decode( $employee['working_hours'] ?? '', true ) ?: [];
+
+			// Ensure gc_token is always an object with auth_url property to prevent frontend errors.
+			if (
+				! isset( $item['gc_token'] )
+				|| null === $item['gc_token']
+				|| ! is_array( $item['gc_token'] )
+			) {
+				$item['gc_token'] = [
+					'auth_url' => '',
+				];
+			} elseif ( ! isset( $item['gc_token']['auth_url'] ) ) {
+				$item['gc_token']['auth_url'] = '';
+			}
+
 			array_push( $result, $item );
 		}
 		unset( $staff );
@@ -282,12 +305,13 @@ class StaffController extends DashboardController {
 			$wpUser->set_role( User::$staff_role );
 		}
 
-		/** if google calendar addon is installed */
+		// Always return staff data so frontend can use cleaned phone number.
+		$staff = (array) Staff::get( 'id', $id );
+
+		// Required for Google Calendar addon is installed.
 		if ( Plugin::isAddonInstalledAndEnabled( self::$proAddon ) && has_filter( 'bookit_filter_connect_employee_google_calendar' ) ) {
-			$staff = (array) Staff::get( 'id', $id );
 			$staff = apply_filters( 'bookit_filter_connect_employee_google_calendar', $staff );
 		}
-		/** if google calendar addon is installed | end */
 
 		do_action( 'bookit_staff_saved', $id );
 

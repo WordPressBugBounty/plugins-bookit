@@ -414,11 +414,11 @@ class AppointmentsController extends DashboardController {
 		if ( ! in_array( $data['payment_method'], Payments::$typeList ) // phpcs:ignore WordPress.PHP.StrictInArray.MissingTrueStrict
 			|| false === ( $settings['payments'][ $data['payment_method'] ]['enabled']
 				&& Payments::$freeType !== $data['payment_method'] ) ) {
-			$errors['payment_method'] = __( 'Please choose correct payment method' );
+			$errors['payment_method'] = __( 'Please choose correct payment method', 'bookit' );
 		}
 
 		if ( ! in_array( $data['payment_status'], Payments::$statusList ) ) { // phpcs:ignore WordPress.PHP.StrictInArray.MissingTrueStrict
-			$errors['payment_status'] = __( 'Please choose correct payment status' );
+			$errors['payment_status'] = __( 'Please choose correct payment status', 'bookit' );
 		}
 
 		if ( ! in_array( $data['status'], Appointments::$statusList ) ) { // phpcs:ignore WordPress.PHP.StrictInArray.MissingTrueStrict
@@ -441,21 +441,21 @@ class AppointmentsController extends DashboardController {
 			$staff_service = Staff::get_by_id_and_service( $data['staff_id'], $data['service_id'] );
 
 			if ( null === $staff_service ) {
-				$errors['staff_service'] = __( 'Please choose correct staff and service' );
+				$errors['staff_service'] = __( 'Please choose correct staff and service', 'bookit' );
 			}
 		}
 
 		if ( 0 === $data['start_time'] || 0 === $data['end_time'] ) {
-			$errors['dates'] = __( 'Please choose appointment time' );
+			$errors['dates'] = __( 'Please choose appointment time', 'bookit' );
 		}
 
 		if ( empty( $data['date_timestamp'] ) || 0 === $data['date_timestamp'] ) {
-			$errors['dates'] = __( 'Please choose appointment date' );
+			$errors['dates'] = __( 'Please choose appointment date', 'bookit' );
 		}
 
 		if ( $data['customer_phone'] || false === $data['customer_phone'] ) {
 			if ( ! preg_match( '/^((\+)?[0-9]{8,14})$/', $data['customer_phone'] ) ) {
-				$errors['customer_phone'] = __( 'Please enter a valid phone number' );
+				$errors['customer_phone'] = __( 'Please enter a valid phone number', 'bookit' );
 			}
 		}
 

@@ -196,6 +196,7 @@ class Translations {
 			'pay_locally'                   => esc_html__( 'Pay Locally', 'bookit' ),
 			'buy_now'                       => esc_html__( 'Buy Now', 'bookit' ),
 			'no'                            => esc_html__( 'No', 'bookit' ),
+			// translators: %s is the name of the add-on.
 			'addon_feature'                 => esc_html__( 'This feature is part of "%s" Add-on!', 'bookit' ),
 			/** Settings page */
 			'calendar_view'                 => esc_html__( 'Calendar View', 'bookit' ),
@@ -306,6 +307,7 @@ class Translations {
 	public static function google_calendar_translations() {
 		$google_data_link = self::get_google_data_link();
 
+		// translators: %1$s and %2$s are opening and closing HTML link tags.
 		$google_app_data = sprintf(
 		    esc_html_x(
 		        'BookIt for Google Calendar will ensure that any data received from Google APIs is handled in accordance with the %1$sGoogle API Services User Data Policy%2$s, including compliance with the Limited Use requirements.',
@@ -421,8 +423,10 @@ class Translations {
 			'buy'                => esc_html__( 'Buy', 'bookit' ),
 			'view_changelog'     => esc_html__( 'View Changelog', 'bookit' ),
 			'popular'            => esc_html__( 'Popular', 'bookit' ),
+			// translators: First %s is the license type, second %s is the product name.
 			'license_purchased'  => esc_html__( '%s %s license already purchased', 'bookit' ), // phpcs:ignore WordPress.WP.I18n.UnorderedPlaceholdersText
 			'upgrade'            => esc_html__( 'Upgrade', 'bookit' ),
+			// translators: %s is the product name.
 			'active_license'     => esc_html__( 'Lifetime license %s already active', 'bookit' ),
 			'active'             => esc_html__( 'Active', 'bookit' ),
 			'per_year'           => esc_html__( 'per year', 'bookit' ),

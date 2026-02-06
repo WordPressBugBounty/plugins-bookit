@@ -34,7 +34,7 @@ class Services extends DatabaseModel {
 	 */
 	public static function get_all_short() {
 		global $wpdb;
-		return $wpdb->get_results( sprintf( 'SELECT %1$s.id, %1$s.title, %1$s.price FROM %1$s ORDER BY %2$s DESC', self::_table(), static::$primary_key ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		return $wpdb->get_results( sprintf( 'SELECT %1$s.id, %1$s.title, %1$s.price FROM `%1$s` ORDER BY `%2$s` DESC', esc_sql( self::_table() ), esc_sql( static::$primary_key ) ), ARRAY_A );
 	}
 
 	/**
@@ -43,13 +43,13 @@ class Services extends DatabaseModel {
 	public static function get_staff_services( $staffId ) {
 		global $wpdb;
 		$sql = sprintf(
-			'SELECT %1$s.*
-					FROM %1$s
-					INNER JOIN %2$s ON %1$s.id = %2$s.service_id AND %2$s.staff_id=%%d
-					ORDER BY %1$s.%3$s DESC',
-			self::_table(),
-			Staff_Services::_table(),
-			static::$primary_key
+			'SELECT `%1$s`.*
+					FROM `%1$s`
+					INNER JOIN `%2$s` ON `%1$s`.id = `%2$s`.service_id AND `%2$s`.staff_id=%%d
+					ORDER BY `%1$s`.`%3$s` DESC',
+			esc_sql( self::_table() ),
+			esc_sql( Staff_Services::_table() ),
+			esc_sql( static::$primary_key )
 		);
 		return $wpdb->get_results( $wpdb->prepare( $sql, intval( $staffId ) ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 	}
@@ -60,13 +60,13 @@ class Services extends DatabaseModel {
 	public static function get_assigned_to_staff() {
 		global $wpdb;
 		$sql = sprintf(
-			'SELECT %1$s.*
-					FROM %1$s
-					INNER JOIN %2$s ON %1$s.id = %2$s.service_id 
-					GROUP BY %1$s.id ORDER BY %1$s.%3$s DESC',
-			self::_table(),
-			Staff_Services::_table(),
-			static::$primary_key
+			'SELECT `%1$s`.*
+					FROM `%1$s`
+					INNER JOIN `%2$s` ON `%1$s`.id = `%2$s`.service_id
+					GROUP BY `%1$s`.id ORDER BY `%1$s`.`%3$s` DESC',
+			esc_sql( self::_table() ),
+			esc_sql( Staff_Services::_table() ),
+			esc_sql( static::$primary_key )
 		);
 
 		return $wpdb->get_results( $sql, ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
@@ -78,13 +78,13 @@ class Services extends DatabaseModel {
 	public static function get_all_with_category() {
 		global $wpdb;
 		$sql = sprintf(
-			'SELECT %1$s.*, 
-					%2$s.name as category
-					FROM %1$s
-					LEFT JOIN %2$s ON %1$s.category_id = %2$s.id 
-					ORDER BY %2$s.name, %1$s.title',
-			self::_table(),
-			Categories::_table()
+			'SELECT `%1$s`.*,
+					`%2$s`.name as category
+					FROM `%1$s`
+					LEFT JOIN `%2$s` ON `%1$s`.category_id = `%2$s`.id
+					ORDER BY `%2$s`.name, `%1$s`.title',
+			esc_sql( self::_table() ),
+			esc_sql( Categories::_table() )
 		);
 		return $wpdb->get_results( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 	}
@@ -95,12 +95,12 @@ class Services extends DatabaseModel {
 	public static function get_service_total_staff( $service_id ) {
 		global $wpdb;
 		$sql = sprintf(
-			'SELECT COUNT(%2$s.id)
-					FROM %1$s
-					LEFT JOIN %2$s ON %1$s.id = %2$s.service_id 
-					WHERE  %1$s.id = %%d',
-			self::_table(),
-			Staff_Services::_table()
+			'SELECT COUNT(`%2$s`.id)
+					FROM `%1$s`
+					LEFT JOIN `%2$s` ON `%1$s`.id = `%2$s`.service_id
+					WHERE  `%1$s`.id = %%d',
+			esc_sql( self::_table() ),
+			esc_sql( Staff_Services::_table() )
 		);
 		return $wpdb->get_var( $wpdb->prepare( $sql, intval( $service_id ) ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 	}
@@ -112,8 +112,8 @@ class Services extends DatabaseModel {
 	public static function get_total_services_for_category( $category_id ) {
 		global $wpdb;
 		$sql = sprintf(
-			'SELECT COUNT(*) FROM %s WHERE category_id = %%d',
-			self::_table()
+			'SELECT COUNT(*) FROM `%s` WHERE category_id = %%d',
+			esc_sql( self::_table() )
 		);
 		return $wpdb->get_var( $wpdb->prepare( $sql, intval( $category_id ) ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 	}

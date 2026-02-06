@@ -57,8 +57,8 @@ class Customers extends DatabaseModel {
 			);
 		}
 
-		$sql = sprintf( 'DELETE FROM %s WHERE id = %d', self::_table(), $id );
-		$wpdb->query( $wpdb->prepare( $sql ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		$sql = sprintf( 'DELETE FROM `%s` WHERE id = %d', esc_sql( self::_table() ), absint( $id ) );
+		$wpdb->query( $wpdb->prepare( $sql ) );
 
 		$wpdb->query( 'COMMIT' );
 	}

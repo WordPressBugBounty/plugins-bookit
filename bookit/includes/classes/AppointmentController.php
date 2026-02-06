@@ -10,6 +10,9 @@ use Bookit\Classes\Database\Customers;
 use Bookit\Classes\Database\Staff_Services;
 use Bookit\Classes\Vendor\Payments;
 use Bookit\Helpers\CleanHelper;
+use DateTimeZone;
+use DateTime;
+use Exception;
 
 
 class AppointmentController {
@@ -52,6 +55,55 @@ class AppointmentController {
 				),
 			),
 		);
+	}
+
+	/**
+	 * Convert UTC offset to timezone name.
+	 *
+	 * @since 2.5.2
+	 *
+	 * @param string $timezone_string The timezone string from wp_timezone_string().
+	 *
+	 * @return string The timezone name or an empty string if no match is found.
+	 */
+	private static function convert_offset_to_timezone_name( $timezone_string ) {
+		// Check if it's a UTC offset (format: +HH:MM or -HH:MM).
+		if ( preg_match( '/^([+-])(\d{2}):(\d{2})$/', $timezone_string, $matches ) ) {
+			$sign           = ( $matches[1] === '-' ) ? -1 : 1;
+			$hours          = (int) $matches[2];
+			$minutes        = (int) $matches[3];
+			$offset_seconds = $sign * ( $hours * 3600 + $minutes * 60 );
+
+			// Try to find a timezone name based on the offset.
+			$timezone_name = timezone_name_from_abbr( '', $offset_seconds, 0 );
+
+			if ( $timezone_name !== false ) {
+				return $timezone_name;
+			}
+
+			// If timezone_name_from_abbr() fails, search through timezone identifiers.
+			$timezone_identifiers = DateTimeZone::listIdentifiers();
+			$now                  = new DateTime( 'now', new DateTimeZone( 'UTC' ) );
+
+			foreach ( $timezone_identifiers as $identifier ) {
+				try {
+					$tz = new DateTimeZone( $identifier );
+					$offset = $tz->getOffset( $now );
+
+					if ( $offset === $offset_seconds ) {
+						return $identifier;
+					}
+				} catch ( Exception $e ) {
+					continue;
+				}
+			}
+
+			// If no match found, return an empty string.
+			return '';
+		}
+
+		// Already a timezone name, return as is.
+		return $timezone_string;
 	}
 
 	/**
@@ -156,7 +208,6 @@ class AppointmentController {
 	 * Book Appointment
 	 */
 	public static function save() {
-
 		$send_no_cache_headers = apply_filters( 'rest_send_nocache_headers', is_user_logged_in() );
 		$nonce = '';
 		if ( ! $send_no_cache_headers ) {
@@ -208,6 +259,11 @@ class AppointmentController {
 			do_action( 'bookit_google_calendar_create_appointment', $appointment );
 		}
 		/** if google calendar addon is installed | end */
+
+		// Add timezone to the appointment.
+		$appointment['timezone_name'] = self::convert_offset_to_timezone_name(
+			wp_timezone_string()
+		);
 
 		$redirect_url = '';
 		if ( ! is_null( $appointment['payment_method'] ) ) {

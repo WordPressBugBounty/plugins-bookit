@@ -55,12 +55,34 @@ class CleanHelper {
 		return $data;
 	}
 
+	/**
+	 * Custom phone number sanitization.
+	 *
+	 * If the phone is empty and was not empty before, return false to trigger
+	 * validation error.
+	 *
+	 * @param string $phone The phone number to sanitize.
+	 *
+	 * @return string|false The sanitized phone number or false to trigger
+	 *                      validation error.
+	 */
 	protected static function custom_sanitize_phone( string $phone ) {
 		if ( ! $phone ) {
 			return $phone;
 		}
+
+		$has_phone = ! empty( $phone );
+
 		$phone = filter_var( $phone, FILTER_SANITIZE_NUMBER_INT );
 		$phone = str_replace( '-', '', $phone );
+
+		// Return false if the phone is empty and was not empty before to trigger validation error.
+		if (
+			$has_phone
+			&& empty( $phone )
+		) {
+			return false;
+		}
 
 		return $phone;
 	}

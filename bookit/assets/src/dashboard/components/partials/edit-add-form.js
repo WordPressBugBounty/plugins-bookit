@@ -90,6 +90,13 @@ export default {
             }
             this.$store.commit('unshiftRows', row);
           } else {
+            // For customers and staff, use the cleaned phone number from backend response instead of the original row data.
+            if ( this.type === 'customer' && response.data.customer && response.data.customer.phone !== undefined ) {
+              row.phone = response.data.customer.phone;
+            }
+            if ( this.type === 'staff' && response.data.staff && response.data.staff.phone !== undefined ) {
+              row.phone = response.data.staff.phone;
+            }
             this.$store.commit('setEditedRow', row);
           }
           this.$store.commit('setIsObjectUpdated', true);

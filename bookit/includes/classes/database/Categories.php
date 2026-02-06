@@ -30,7 +30,7 @@ class Categories extends DatabaseModel {
 	 */
 	public static function get_all() {
 		global $wpdb;
-		return $wpdb->get_results( sprintf( 'SELECT * FROM %s ORDER BY %s ASC', self::_table(), static::$primary_key ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		return $wpdb->get_results( sprintf( 'SELECT * FROM `%s` ORDER BY `%s` ASC', esc_sql( self::_table() ), esc_sql( static::$primary_key ) ), ARRAY_A );
 	}
 
 	/**
@@ -43,13 +43,13 @@ class Categories extends DatabaseModel {
 
 		global $wpdb;
 		$sql = sprintf(
-			'SELECT %1$s.*
-					FROM %1$s
-					WHERE %1$s.id IN ( %3$s )
-					ORDER BY %1$s.%2$s DESC',
-			self::_table(),
-			static::$primary_key,
-			implode( ',', $ids )
+			'SELECT `%1$s`.*
+					FROM `%1$s`
+					WHERE `%1$s`.id IN ( %3$s )
+					ORDER BY `%1$s`.`%2$s` DESC',
+			esc_sql( self::_table() ),
+			esc_sql( static::$primary_key ),
+			esc_sql( implode( ',', $ids ) )
 		);
 
 		return $wpdb->get_results( $sql, ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
@@ -61,13 +61,13 @@ class Categories extends DatabaseModel {
 	public static function get_with_exist_services() {
 		global $wpdb;
 		$sql = sprintf(
-			'SELECT %1$s.*
-					FROM %1$s
-					INNER JOIN %2$s ON %1$s.id = %2$s.category_id 
-					GROUP BY %1$s.id ORDER BY %1$s.%3$s DESC',
-			self::_table(),
-			Services::_table(),
-			static::$primary_key
+			'SELECT `%1$s`.*
+					FROM `%1$s`
+					INNER JOIN `%2$s` ON `%1$s`.id = `%2$s`.category_id
+					GROUP BY `%1$s`.id ORDER BY `%1$s`.`%3$s` DESC',
+			esc_sql( self::_table() ),
+			esc_sql( Services::_table() ),
+			esc_sql( static::$primary_key )
 		);
 
 		return $wpdb->get_results( $sql, ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
@@ -80,7 +80,7 @@ class Categories extends DatabaseModel {
 	 */
 	public static function get_one( $category_id ) {
 		global $wpdb;
-		return $wpdb->get_results( sprintf( 'SELECT * FROM %s WHERE id = %d ORDER BY %s ASC', self::_table(), intval( $category_id ), static::$primary_key ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		return $wpdb->get_results( sprintf( 'SELECT * FROM `%s` WHERE id = %d ORDER BY `%s` ASC', esc_sql( self::_table() ), intval( $category_id ), esc_sql( static::$primary_key ) ), ARRAY_A );
 	}
 
 	/**
@@ -91,15 +91,15 @@ class Categories extends DatabaseModel {
 	public static function category_with_services( $category_id ) {
 		global $wpdb;
 		$sql = sprintf(
-			'SELECT %1$s.*, 
-       				GROUP_CONCAT(%2$s.id, ":",%2$s.title) as services,
-       				GROUP_CONCAT(%2$s.id) as service_ids
-					FROM %1$s
-					LEFT JOIN %2$s ON %1$s.id = %2$s.category_id
-					WHERE %1$s.id = %%d
-					GROUP BY %1$s.id',
-			self::_table(),
-			Services::_table()
+			'SELECT `%1$s`.*,
+       				GROUP_CONCAT(`%2$s`.id, "::",`%2$s`.title) as services,
+       				GROUP_CONCAT(`%2$s`.id) as service_ids
+					FROM `%1$s`
+					LEFT JOIN `%2$s` ON `%1$s`.id = `%2$s`.category_id
+					WHERE `%1$s`.id = %%d
+					GROUP BY `%1$s`.id',
+			esc_sql( self::_table() ),
+			esc_sql( Services::_table() )
 		);
 		return $wpdb->get_row( $wpdb->prepare( $sql, intval( $category_id ) ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 	}
@@ -111,20 +111,20 @@ class Categories extends DatabaseModel {
 		global $wpdb;
 
 		$sql = sprintf(
-			'SELECT 
-       				   GROUP_CONCAT(DISTINCT ( %2$s.id )) as service_ids,
-				       COUNT(DISTINCT (%2$s.id )) as services, 
-				       COUNT(%3$s.id) as staff, 
-				       COUNT(%4$s.id) as appointments
-					FROM %1$s
-					LEFT JOIN %2$s ON %1$s.id = %2$s.category_id
-					LEFT JOIN %3$s ON %3$s.service_id = %2$s.id
-					LEFT JOIN %4$s ON %4$s.service_id = %2$s.id and %4$s.start_time > %%d
-					WHERE  %1$s.id = %%d',
-			self::_table(),
-			Services::_table(),
-			Staff_Services::_table(),
-			Appointments::_table()
+			'SELECT
+       				   GROUP_CONCAT(DISTINCT ( `%2$s`.id )) as service_ids,
+				       COUNT(DISTINCT (`%2$s`.id )) as services,
+				       COUNT(`%3$s`.id) as staff,
+				       COUNT(`%4$s`.id) as appointments
+					FROM `%1$s`
+					LEFT JOIN `%2$s` ON `%1$s`.id = `%2$s`.category_id
+					LEFT JOIN `%3$s` ON `%3$s`.service_id = `%2$s`.id
+					LEFT JOIN `%4$s` ON `%4$s`.service_id = `%2$s`.id and `%4$s`.start_time > %%d
+					WHERE  `%1$s`.id = %%d',
+			esc_sql( self::_table() ),
+			esc_sql( Services::_table() ),
+			esc_sql( Staff_Services::_table() ),
+			esc_sql( Appointments::_table() )
 		);
 		$now = current_time( 'timestamp' );
 		return $wpdb->get_row( $wpdb->prepare( $sql, intval( $now ), intval( $category_id ) ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
@@ -163,8 +163,8 @@ class Categories extends DatabaseModel {
 
 		// delete staff connection
 		if ( null != $category->service_ids ) {
-			$sql = sprintf( 'DELETE FROM %s WHERE service_id IN (%s)', Staff_Services::_table(), $category->service_ids );
-			$wpdb->query( $wpdb->prepare( $sql ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			$sql = sprintf( 'DELETE FROM `%s` WHERE service_id IN (%s)', esc_sql( Staff_Services::_table() ), esc_sql( $category->service_ids ) );
+			$wpdb->query( $wpdb->prepare( $sql ) );
 		}
 
 		// delete category

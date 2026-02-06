@@ -26,8 +26,8 @@ abstract class DatabaseModel {
 	 */
 	private static function _fetch_sql( $key, $value ) {
 		global $wpdb;
-		$sql = sprintf( 'SELECT * FROM %s WHERE %s = %%s', self::_table(), $key );
-		return $wpdb->prepare( $sql, $value ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		$sql = sprintf( 'SELECT * FROM `%s` WHERE `%s` = %%s', esc_sql( self::_table() ), esc_sql( $key ) );
+		return $wpdb->prepare( $sql, $value );
 	}
 
 	/**
@@ -44,15 +44,15 @@ abstract class DatabaseModel {
 	public static function get_paged( $limit, $offset, $search = '', $sort = '', $order = '' ) {
 		global $wpdb;
 		$sql = sprintf(
-			'SELECT * FROM %s %s ORDER BY %s %s LIMIT %%d OFFSET %%d',
-			self::_table(),
+			'SELECT * FROM `%s` %s ORDER BY `%s` %s LIMIT %%d OFFSET %%d',
+			esc_sql( self::_table() ),
 			$search,
-			( empty( $sort ) ) ? static::$primary_key : $sort,
-			( empty( $order ) ) ? 'DESC' : $order
+			esc_sql( ( empty( $sort ) ) ? static::$primary_key : $sort ),
+			esc_sql( ( empty( $order ) ) ? 'DESC' : $order )
 		);
 		return $wpdb->get_results(
 			$wpdb->prepare(
-				$sql, // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				$sql,
 				intval( $limit ),
 				intval( $offset )
 			),
@@ -66,7 +66,7 @@ abstract class DatabaseModel {
 	public static function get_all() {
 		global $wpdb;
 		return $wpdb->get_results(
-			sprintf( 'SELECT * FROM %s ORDER BY %s DESC', self::_table(), static::$primary_key ), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			sprintf( 'SELECT * FROM `%s` ORDER BY `%s` DESC', esc_sql( self::_table() ), esc_sql( static::$primary_key ) ),
 			ARRAY_A
 		);
 	}
@@ -77,7 +77,7 @@ abstract class DatabaseModel {
 	 */
 	public static function get_count() {
 		global $wpdb;
-		return $wpdb->get_var( sprintf( 'SELECT COUNT(*) FROM %s', self::_table() ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		return $wpdb->get_var( sprintf( 'SELECT COUNT(*) FROM `%s`', esc_sql( self::_table() ) ) );
 	}
 
 	/**
@@ -157,8 +157,8 @@ abstract class DatabaseModel {
 	 */
 	public static function delete( $value ) {
 		global $wpdb;
-		$sql = sprintf( 'DELETE FROM %s WHERE %s = %%s', self::_table(), static::$primary_key );
-		return $wpdb->query( $wpdb->prepare( $sql, $value ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		$sql = sprintf( 'DELETE FROM `%s` WHERE `%s` = %%s', esc_sql( self::_table() ), esc_sql( static::$primary_key ) );
+		return $wpdb->query( $wpdb->prepare( $sql, $value ) );
 	}
 
 	/**
@@ -169,8 +169,8 @@ abstract class DatabaseModel {
 	 */
 	public static function delete_where( $key, $value ) {
 		global $wpdb;
-		$sql = sprintf( 'DELETE FROM %s WHERE %s = %%s', self::_table(), $key );
-		return $wpdb->query( $wpdb->prepare( $sql, $value ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		$sql = sprintf( 'DELETE FROM `%s` WHERE `%s` = %%s', esc_sql( self::_table() ), esc_sql( $key ) );
+		return $wpdb->query( $wpdb->prepare( $sql, $value ) );
 	}
 
 	/**

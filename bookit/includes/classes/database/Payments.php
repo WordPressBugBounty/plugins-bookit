@@ -70,9 +70,11 @@ class Payments extends DatabaseModel {
 	 */
 	public static function update_payment_methods_enum() {
 		global $wpdb;
-		$table_name = self::_table();
 
-		$sql = "ALTER TABLE {$table_name} MODIFY COLUMN `type` ENUM('locally', 'stripeConnect', 'paypal', 'stripe', 'woocommerce', 'free') NOT NULL DEFAULT 'locally';";
+		$sql = sprintf(
+			"ALTER TABLE `%s` MODIFY COLUMN `type` ENUM('locally', 'stripeConnect', 'paypal', 'stripe', 'woocommerce', 'free') NOT NULL DEFAULT 'locally';",
+			esc_sql( self::_table() )
+		);
 		$wpdb->query( $sql );
 	}
 }

@@ -1,11 +1,11 @@
-﻿=== Booking Calendar | Appointment Booking | Bookit ===
+=== Booking Calendar | Appointment Booking | Bookit ===
 Contributors: theeventscalendar, bordoni
 Donate link: https://theeventscalendar.com/
 Tags: booking calendar, appointment booking, appointment calendar, booking, calendar, availability calendar, booking engine, tour booking
 Requires at least: 6.3
 Requires PHP: 7.4
-Tested up to: 6.6.0
-Stable tag: 2.5.0
+Tested up to: 6.9
+Stable tag: 2.5.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -99,6 +99,24 @@ This section describes how to install the plugin and get it working.
 
 
 == Changelog ==
+
+= 2.5.2 2026-01-13 =
+
+* Fix - Copy button for the PayPal IPN now copies the correct URL.
+* Fix - Add phone number validation on staff and customer add/edit forms.
+* Fix - "Add to Calendar" feature now includes timezone information, ensuring calendar apps show the correct local time.
+
+= 2.5.1 2025-11-08 =
+
+* Security - Add authorization check to Stripe Connect REST API endpoint to prevent unauthorized account connections. [SVUL-29]
+* Tweak - Update GitHub Actions cache from deprecated v2 to v4 for CI/CD workflows.
+* Tweak - Update tested WordPress version to 6.8.
+* Tweak - Replace wp_redirect with wp_safe_redirect to improve security compliance.
+* Tweak - Add allowed_redirect_hosts filter for WhoDat domain in Stripe Connect disconnect flow.
+* Fix - Add missing 'bookit' text domain to 16 internationalization function calls across 4 files.
+* Fix - Add translator comments for strings with placeholders to improve translation context.
+* Fix - Escape SQL table names properly in all database queries to improve security.
+* Fix - Escape exception messages in Container.php to prevent potential XSS vulnerabilities.
 
 = 2.5.0 2024-07-18 =
 

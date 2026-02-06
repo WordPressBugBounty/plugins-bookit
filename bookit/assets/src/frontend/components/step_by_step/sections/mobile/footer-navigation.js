@@ -115,10 +115,11 @@ export default {
     },
     generateGoogleCalendarLink() {
       let url = 'https://calendar.google.com/calendar/render?action=TEMPLATE';
-      url += '&dates=' + this.moment.unix(this.appointment.start_time).format('YYYYMMDDTHHmmssZ')  + '/' + this.moment.unix(this.appointment.end_time).format('YYYYMMDDTHHmmssZ');
+      url += '&dates=' + this.moment.unix(this.appointment.start_time).format('YYYYMMDDTHHmmss') + '/' + this.moment.unix(this.appointment.end_time).format('YYYYMMDDTHHmmss');
       url += '&text=' + encodeURIComponent('Appointment - ' + this.selectedService.title);
+      url += '&ctz=' + this.appointment.timezone_name;
       url += '&sf=true&output=xml';
-      window.open(url,'_blank');
+      window.open(url, '_blank');
     },
     generateICalLink() {
       let ics =
@@ -129,9 +130,9 @@ export default {
           "VERSION:2.0\n" +
           "BEGIN:VEVENT\n" +
           "UID:bookit-" + this.appointment.start_time + "\n" +
-          "DTSTART:" +
+          "DTSTART;TZID=" + this.appointment.timezone_name + ":" +
           this.moment.unix(this.appointment.start_time).format('YYYYMMDDTHHmmss') + "Z\n" +
-          "DTEND:" +
+          "DTEND;TZID=" + this.appointment.timezone_name + ":" +
           this.moment.unix(this.appointment.end_time).format('YYYYMMDDTHHmmss') +"Z\n" +
           "SUMMARY: Appointment - " + this.selectedService.title + "\n" +
           "END:VEVENT\n" +

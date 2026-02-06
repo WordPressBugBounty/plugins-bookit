@@ -362,7 +362,7 @@ class SettingsController extends DashboardController {
 	public static function redirect_to_main_page() {
 		$freemiusContactSlug = 'bookit-contact';
 		if ( isset( $_GET['page'] ) && $_GET['page'] == $freemiusContactSlug ) {
-			wp_redirect( home_url() . '/wp-admin/admin.php?page=bookit' );
+			wp_safe_redirect( home_url() . '/wp-admin/admin.php?page=bookit' );
 			exit();
 		}
 	}
