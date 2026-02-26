@@ -191,6 +191,20 @@ class Notifications {
 		$status         = $appointment->status;
 		$payment_status = $appointment->payment_status;
 
+		$payment_status_labels = array(
+			'pending'   => __( 'pending', 'bookit' ),
+			'cancelled' => __( 'cancelled', 'bookit' ),
+			'rejected'  => __( 'rejected', 'bookit' ),
+			'complete'  => __( 'complete', 'bookit' ),
+		);
+
+		$appointment_status_labels = array(
+			'pending'   => __( 'pending', 'bookit' ),
+			'approved'  => __( 'approved', 'bookit' ),
+			'cancelled' => __( 'cancelled', 'bookit' ),
+			'delete'    => __( 'delete', 'bookit' ),
+		);
+
 		$vars = array(
 			'[admin]'           => get_option( 'admin_email' ),
 			'[staff]'           => $appointment->staff_email,
@@ -205,10 +219,10 @@ class Notifications {
 			'[appointment_day]' => date( get_option( 'date_format' ), $appointment->date_timestamp ),
 			'[start_time]'      => date( get_option( 'time_format' ), $appointment->start_time ),
 			'[payment_method]'  => $appointment->payment_method,
-			'[payment_status]'  => __( $payment_status, 'bookit' ), // phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText
+			'[payment_status]'  => $payment_status_labels[ $payment_status ] ?? $payment_status,
 			'[price]'           => $appointment->price,
 			'[total]'           => bookit_price( $appointment->price ),
-			'[status]'          => __( $status, 'bookit' ), // phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText
+			'[status]'          => $appointment_status_labels[ $status ] ?? $status,
 			'[reason]'          => $reason,
 		);
 

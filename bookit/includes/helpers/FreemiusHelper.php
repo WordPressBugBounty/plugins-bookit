@@ -162,7 +162,8 @@ class FreemiusHelper {
 
 						if ( ! isset( $plan_data[ $pricing->licenses ] ) ) {
 							$plan_data[ $pricing->licenses ] = array(
-								'text'      => esc_html__( "Up to {$pricing->licenses} Sites", 'bookit' ), // phpcs:ignore WordPress.WP.I18n.InterpolatedVariableText
+								/* translators: %d: Number of sites the license supports */
+								'text'      => sprintf( __( 'Up to %d Sites', 'bookit' ), $pricing->licenses ),
 								'classname' => '',
 								'type'      => '',
 							);

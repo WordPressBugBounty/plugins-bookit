@@ -1,62 +1,30 @@
-=== Booking Calendar | Appointment Booking | Bookit ===
+=== Bookit — Booking & Appointment Calendar ===
 Contributors: theeventscalendar, bordoni
 Donate link: https://theeventscalendar.com/
-Tags: booking calendar, appointment booking, appointment calendar, booking, calendar, availability calendar, booking engine, tour booking
+Tags: booking calendar, appointment booking, appointment calendar, booking, calendar
 Requires at least: 6.3
 Requires PHP: 7.4
 Tested up to: 6.9
-Stable tag: 2.5.2
+Stable tag: 2.5.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
+Appointment booking and event calendar for WordPress. Services, staff, availability, shortcodes, and email notifications. Prevents double-booking.
+
 == Description ==
 
-## Free Booking & Appointment Management Plugin for WordPress - Bookit
+Bookit adds an appointment booking system and event calendar to your WordPress site. You define services, staff, working hours, and prices; visitors pick a date and time and submit a booking. The plugin prevents double-booking and sends configurable email notifications.
 
-Easily manage and schedule appointments, and bookings on your WordPress website with the free [Bookit plugin](https://bookitwp.com/). No matter what type of appointment or bookings business you have, Bookit works for everyone. Packed with features and backed by the expert team behind [The Events Calendar](https://theeventscalendar.com/).
+**What you can do:**
 
-Bookit is ready to go out of the box. It’s also extensible, easy to use, and completely customizable.
+* Define multiple services with duration and price; assign staff and set their working hours and days.
+* Show availability in daily, weekly, or monthly calendar views.
+* Place a booking form on any page via shortcode or with Elementor and WPBakery widgets.
+* Let customers choose a service and staff, see available slots, and submit a booking (no account required unless you enable it).
+* Receive and send email notifications for new, updated, or upcoming appointments; templates are editable in settings.
+* Manage all appointments from the admin dashboard; optional Stripe payments in the free version.
 
-## The Best Booking Plugin for WordPress
-
-Bookit is everything you need to power your appointments and bookings business. Features in the free version include:
-
-- Online scheduling with a click 24/7
-- Accept payments online using Stripe.
-- Three types of calendar view – daily, monthly, weekly
-- Removes paperwork.
-- Customers can use any device to schedule a meeting at any time they want.
-- Check the availability of the dates and submit a booking in under 5 minutes.
-- Printable confirmation protecting your business and the customer.
-- Notifications about upcoming appointments.
-- Choose the service and employee of their choosing.
-- User-friendly admin interface and intuitive design.
-- Flexibility for any business model.
-- Working dates and hours can be defined for each service/staff member.
-- Each service can have its price and duration.
-- Automatic price calculation.
-- Custom options to fit your brand identity.
-- Responsive front end and back end design.
-- Simple installation and integration process.
-- Appointments dashboard for admin.
-- Seamless Integration with both Elementor and WPbakery.
-
-## Why Use an Appointment & Booking Plugin?
-
-By implementing Bookit on your website you can benefit from an all-in-one appointments, bookings and reservations system. Run your business from your website including managing appointments, scheduling staff hours and take payments online 24/7.
-
-Bookit works for any use case that requires appointments, bookings or reservations including; in-person classes and teaching, garages and mechanics, medical professions like Doctors & Dentists, Lawyers, Health services like Spas and so many more.
-
-## Go for Pro With BookIt Pro
-
-Extend the [best WordPress appointment plugin](http://bookitwp.com) with more features including WooCommerce integration and Google calendar integration.
-
-- WooCommerce integration.
-- Complete Google Calendar integration
-- Custom fields drag-and-drop.
-- Date & Time availability check.
-- Payment configuration takes only a couple of minutes.
-
+Optional [BookIt Pro add-ons](https://bookitwp.com/bookit-pro/) add WooCommerce integration, Google Calendar sync, drag-and-drop custom fields, and additional payment options (e.g. PayPal). Documentation and support are available at [bookitwp.com](https://bookitwp.com/).
 
 == Frequently Asked Questions ==
 
@@ -99,6 +67,15 @@ This section describes how to install the plugin and get it working.
 
 
 == Changelog ==
+
+= 2.5.3 2026-02-26 =
+
+* Fix - Update plugin display name to comply with WordPress.org naming guidelines and improve clarity. [BI-42]
+* Fix - Correct gettext usage to ensure all translatable strings use static text and the proper text domain for full compatibility with WordPress translation tools. [BI-45]
+* Tweak - Upgrade Freemius SDK to the latest stable version to improve security, compatibility, and support. [BI-44]
+* Tweak - Replace bundled "freemius" package folder with Composer-based autoloading to follow WordPress.org best practices and reduce potential library conflicts. [BI-47]
+* Tweak - Add missing composer.json file to the plugin root to improve transparency and align with open-source standards. [BI-43]
+* Tweak - Change the description on readme.txt to comply with WordPress.org guidelines. [BI-46]
 
 = 2.5.2 2026-01-13 =
 

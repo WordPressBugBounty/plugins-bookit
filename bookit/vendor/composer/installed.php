@@ -1,15 +1,24 @@
 <?php return array(
     'root' => array(
         'name' => 'stellarwp/bookit',
-        'pretty_version' => 'dev-release/T26.amethyst',
-        'version' => 'dev-release/T26.amethyst',
-        'reference' => '84b59878cc4c94f731e040d2f65f1a03fd1517f6',
+        'pretty_version' => 'dev-release/M26.banette',
+        'version' => 'dev-release/M26.banette',
+        'reference' => 'bb0f00d4780afce937bf749158c880fb633b26e5',
         'type' => 'wordpress-plugin',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
         'dev' => false,
     ),
     'versions' => array(
+        'freemius/wordpress-sdk' => array(
+            'pretty_version' => '2.13.0',
+            'version' => '2.13.0.0',
+            'reference' => '3cbe98b5bd0b0fb5ca4df97b8088592737ea4375',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../freemius/wordpress-sdk',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
         'lucatume/di52' => array(
             'pretty_version' => '3.3.7',
             'version' => '3.3.7.0',
@@ -38,9 +47,9 @@
             'dev_requirement' => false,
         ),
         'stellarwp/bookit' => array(
-            'pretty_version' => 'dev-release/T26.amethyst',
-            'version' => 'dev-release/T26.amethyst',
-            'reference' => '84b59878cc4c94f731e040d2f65f1a03fd1517f6',
+            'pretty_version' => 'dev-release/M26.banette',
+            'version' => 'dev-release/M26.banette',
+            'reference' => 'bb0f00d4780afce937bf749158c880fb633b26e5',
             'type' => 'wordpress-plugin',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

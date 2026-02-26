@@ -1,14 +1,14 @@
 <?php
 /**
- * Plugin Name: Booking Calendar | Appointment Booking | Bookit
+ * Plugin Name: Bookit — Booking & Appointment Calendar
  * Plugin URI: https://bookitwp.com/
- * Description: Booking Appointments Calendar. You can easily realize Booking Appointments with this plugin.
+ * Description: Appointment booking and event calendar for WordPress. Services, staff, availability, shortcodes, and email notifications. Prevents double-booking.
  * Author: The Events Calendar
  * Author URI: https://theeventscalendar.com/
  * License: GNU General Public License v2 or later
- * License URI: http://www.gnu.org/licenses/gpl-2.0.html
+ * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: bookit
- * Version: 2.5.2
+ * Version: 2.5.3
  * Requires at least: 6.3
  * Requires PHP:      7.4
  */
@@ -25,6 +25,11 @@ define( 'BOOKIT_INCLUDES_PATH', BOOKIT_PATH . '/includes/' );
 define( 'BOOKIT_CLASSES_PATH', BOOKIT_INCLUDES_PATH . 'classes/' );
 define( 'BOOKIT_URL', plugin_dir_url( BOOKIT_FILE ) );
 
+$composer_autoload = BOOKIT_PATH . '/vendor/autoload.php';
+if ( file_exists( $composer_autoload ) ) {
+	require_once $composer_autoload;
+}
+
 require_once BOOKIT_PATH . '/includes/autoload.php';
 
 if ( ! function_exists( 'bookit_fs' ) ) {
@@ -33,12 +38,21 @@ if ( ! function_exists( 'bookit_fs' ) ) {
 		global $bookit_fs;
 
 		if ( ! isset( $bookit_fs ) ) {
-			// Include Freemius SDK.
-			if ( file_exists( BOOKIT_PATH . '/freemius/start.php' ) ) {
-				require_once BOOKIT_PATH . '/freemius/start.php';
+			// Load Freemius SDK when installed via Composer.
+			if ( ! function_exists( 'fs_dynamic_init' ) ) {
+				$freemius_start = null;
+				if ( class_exists( \Composer\InstalledVersions::class ) && \Composer\InstalledVersions::isInstalled( 'freemius/wordpress-sdk' ) ) {
+					$freemius_start = \Composer\InstalledVersions::getInstallPath( 'freemius/wordpress-sdk' ) . '/start.php';
+				} else {
+					$freemius_start = BOOKIT_PATH . '/vendor/freemius/wordpress-sdk/start.php';
+				}
+				if ( $freemius_start && file_exists( $freemius_start ) ) {
+					require_once $freemius_start;
+				}
 			}
 
-			$bookit_fs = fs_dynamic_init( array(
+			if ( function_exists( 'fs_dynamic_init' ) ) {
+				$bookit_fs = fs_dynamic_init( array(
 					'id'             => '8486',
 					'slug'           => 'bookit',
 					'type'           => 'plugin',
@@ -55,6 +69,9 @@ if ( ! function_exists( 'bookit_fs' ) ) {
 						'addons'     => false,
 					),
 				) );
+			} else {
+				$bookit_fs = null;
+			}
 		}
 
 		return $bookit_fs;
@@ -69,15 +86,20 @@ if ( ! function_exists( 'bookit_fs' ) ) {
 }
 
 function bookit_after_upgrade_addon_sync( $prev_version, $new_version ) {
-	if ( '2.1.7' === $new_version ) {
-		// The true purges the cache.
-		bookit_fs()->get_addons( true );
+	if ( '2.1.7' === $new_version && function_exists( 'bookit_fs' ) ) {
+		$bookit_fs = bookit_fs();
+		if ( $bookit_fs ) {
+			// The true purges the cache.
+			$bookit_fs->get_addons( true );
+		}
 	}
 }
 
 $bookit_fs = bookit_fs();
-$bookit_fs->add_action( 'plugin_version_update', 'bookit_after_upgrade_addon_sync' );
-$bookit_fs->add_action( 'after_uninstall', array( \Bookit\Classes\Base\Plugin::class, 'uninstall' ) );
+if ( $bookit_fs ) {
+	$bookit_fs->add_action( 'plugin_version_update', 'bookit_after_upgrade_addon_sync' );
+	$bookit_fs->add_action( 'after_uninstall', array( \Bookit\Classes\Base\Plugin::class, 'uninstall' ) );
+}
 
 /**
  * remove duplicates 'contact us'

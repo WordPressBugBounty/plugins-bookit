@@ -69,30 +69,47 @@ class AppointmentsController extends DashboardController {
 
 		array_push( $payment_methods, Payments::$freeType );
 
+		$payment_method_labels = array(
+			'locally'       => esc_html__( 'locally', 'bookit' ),
+			'stripeConnect' => esc_html__( 'stripeConnect', 'bookit' ),
+			'paypal'        => esc_html__( 'paypal', 'bookit' ),
+			'stripe'        => esc_html__( 'stripe', 'bookit' ),
+			'woocommerce'   => esc_html__( 'woocommerce', 'bookit' ),
+			'free'          => esc_html__( 'free', 'bookit' ),
+		);
 		$payment_methods = array_combine( $payment_methods, $payment_methods );
 		array_walk(
 			$payment_methods,
-			function ( &$value ) {
-				// phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText
-				$value = esc_html__( $value, 'bookit' );
+			function ( &$value ) use ( $payment_method_labels ) {
+				$value = $payment_method_labels[ $value ] ?? esc_html( $value );
 			}
 		);
 
+		$payment_status_labels = array(
+			'pending'   => esc_html__( 'pending', 'bookit' ),
+			'cancelled' => esc_html__( 'cancelled', 'bookit' ),
+			'rejected'  => esc_html__( 'rejected', 'bookit' ),
+			'complete'  => esc_html__( 'complete', 'bookit' ),
+		);
 		$payment_statuses = array_combine( Payments::$statusList, Payments::$statusList );
 		array_walk(
 			$payment_statuses,
-			function ( &$value ) {
-				// phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText
-				$value = esc_html__( $value, 'bookit' );
+			function ( &$value ) use ( $payment_status_labels ) {
+				$value = $payment_status_labels[ $value ] ?? esc_html( $value );
 			}
 		);
 
+		$appointment_status_labels = array(
+			'pending'   => esc_html__( 'Pending', 'bookit' ),
+			'approved'  => esc_html__( 'Approved', 'bookit' ),
+			'cancelled' => esc_html__( 'Cancelled', 'bookit' ),
+			'delete'    => esc_html__( 'Delete', 'bookit' ),
+		);
 		$statuses = array_combine( Appointments::$statusList, Appointments::$statusList );
 		array_walk(
 			$statuses,
-			function ( &$value ) {
-				// phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText
-				$value = esc_html__( ucwords( $value ), 'bookit' );
+			function ( &$value ) use ( $appointment_status_labels ) {
+				$value = $appointment_status_labels[ $value ] ?? esc_html( ucwords( $value ) );
 			}
 		);
 		unset( $statuses[ Appointments::$delete ] );

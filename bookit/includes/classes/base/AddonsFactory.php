@@ -58,17 +58,7 @@ class FakeAddon extends Addon {
 			'events_limit'          => null,
 			'template'              => array(
 				'title' => __( 'Appointment #[appointment_id]', 'bookit' ),
-				'body'  => __(
-					'Service: [service_title]' . PHP_EOL . // phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText
-					'Customer: [customer_name]' . PHP_EOL .
-					'Customer phone: [customer_phone]' . PHP_EOL .
-					'Customer email: [customer_email]' . PHP_EOL .
-					'Start time: [start_time]' . PHP_EOL .
-					'Payment Method: [payment_method]' . PHP_EOL .
-					'Payment Status: [payment_status]' . PHP_EOL .
-					'Total: [total]' . PHP_EOL . 'Status: [status]',
-					'bookit'
-				),
+				'body'  => __( "Service: [service_title]\nCustomer: [customer_name]\nCustomer phone: [customer_phone]\nCustomer email: [customer_email]\nStart time: [start_time]\nPayment Method: [payment_method]\nPayment Status: [payment_status]\nTotal: [total]\nStatus: [status]", 'bookit' ),
 			),
 		);
 	}
