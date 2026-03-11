@@ -42,6 +42,7 @@ class Categories extends DatabaseModel {
 		}
 
 		global $wpdb;
+		$ids = implode( ',', array_map( 'intval', $ids ) );
 		$sql = sprintf(
 			'SELECT `%1$s`.*
 					FROM `%1$s`
@@ -49,7 +50,7 @@ class Categories extends DatabaseModel {
 					ORDER BY `%1$s`.`%2$s` DESC',
 			esc_sql( self::_table() ),
 			esc_sql( static::$primary_key ),
-			esc_sql( implode( ',', $ids ) )
+			$ids
 		);
 
 		return $wpdb->get_results( $sql, ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
@@ -163,8 +164,9 @@ class Categories extends DatabaseModel {
 
 		// delete staff connection
 		if ( null != $category->service_ids ) {
-			$sql = sprintf( 'DELETE FROM `%s` WHERE service_id IN (%s)', esc_sql( Staff_Services::_table() ), esc_sql( $category->service_ids ) );
-			$wpdb->query( $wpdb->prepare( $sql ) );
+			$service_ids = implode( ',', array_map( 'intval', explode( ',', $category->service_ids ) ) );
+			$sql         = sprintf( 'DELETE FROM `%s` WHERE service_id IN (%s)', esc_sql( Staff_Services::_table() ), $service_ids );
+			$wpdb->query( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
 
 		// delete category

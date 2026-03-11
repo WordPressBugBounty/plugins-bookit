@@ -33,31 +33,35 @@ abstract class DatabaseModel {
 	/**
 	 * Get Rows with Pagination
 	 *
-	 * @param $limit
-	 * @param $offset
-	 * @param string $search
-	 * @param string $sort
-	 * @param string $order
+	 * Security: $search must be a trusted SQL fragment (e.g. "WHERE col = %s") with placeholders;
+	 * use $prepare_values for any user input. $sort and $order are validated to prevent SQL injection.
+	 *
+	 * @param int   $limit          Number of rows.
+	 * @param int   $offset         Offset.
+	 * @param string $search        Optional SQL fragment (e.g. WHERE clause with %s placeholders). Must not contain user input.
+	 * @param string $sort          Column name for ORDER BY; only alphanumeric and underscore allowed, or empty for primary key.
+	 * @param string $order         'ASC' or 'DESC' (case-insensitive).
+	 * @param array $prepare_values Values for $search placeholders when using $wpdb->prepare().
 	 *
 	 * @return mixed
 	 */
-	public static function get_paged( $limit, $offset, $search = '', $sort = '', $order = '' ) {
+	public static function get_paged( $limit, $offset, $search = '', $sort = '', $order = '', $prepare_values = array() ) {
 		global $wpdb;
-		$sql = sprintf(
-			'SELECT * FROM `%s` %s ORDER BY `%s` %s LIMIT %%d OFFSET %%d',
-			esc_sql( self::_table() ),
-			$search,
-			esc_sql( ( empty( $sort ) ) ? static::$primary_key : $sort ),
-			esc_sql( ( empty( $order ) ) ? 'DESC' : $order )
-		);
-		return $wpdb->get_results(
-			$wpdb->prepare(
-				$sql,
-				intval( $limit ),
-				intval( $offset )
-			),
-			ARRAY_A
-		);
+		$table     = esc_sql( self::_table() );
+		$sort_col  = esc_sql( empty( $sort ) ? static::$primary_key : $sort );
+		$order_dir = esc_sql( empty( $order ) ? 'DESC' : $order );
+		$limit  = absint( $limit );
+		$offset = absint( $offset );
+
+		if ( ! empty( $prepare_values ) ) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$sql = "SELECT * FROM `{$table}` {$search} ORDER BY `{$sort_col}` {$order_dir} LIMIT %d OFFSET %d";
+			return $wpdb->get_results( $wpdb->prepare( $sql, array_merge( $prepare_values, array( $limit, $offset ) ) ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		}
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$sql = "SELECT * FROM `{$table}` {$search} ORDER BY `{$sort_col}` {$order_dir} LIMIT %d OFFSET %d";
+		return $wpdb->get_results( $wpdb->prepare( $sql, $limit, $offset ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 	}
 
 	/**
@@ -218,10 +222,14 @@ abstract class DatabaseModel {
 		global $wpdb;
 
 		$prefix = $wpdb->prefix . self::$table_prefix;
+		$like   = '%' . $wpdb->esc_like( $prefix ) . '%';
 		return $wpdb->get_var(
-			"SELECT CONCAT( 'DROP TABLE ', GROUP_CONCAT(DISTINCT( table_name) ) , ';' )  AS statement
-			FROM information_schema.tables 
-			WHERE table_name LIKE '%{$prefix}%'" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->prepare(
+				"SELECT CONCAT( 'DROP TABLE ', GROUP_CONCAT(DISTINCT( table_name) ) , ';' )  AS statement
+				FROM information_schema.tables
+				WHERE table_name LIKE %s",
+				$like
+			)
 		);
 	}
 }

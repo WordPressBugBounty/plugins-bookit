@@ -28,6 +28,7 @@ class CleanHelper {
 			$value = sanitize_text_field( $value );
 
 			if ( ! array_key_exists( $key, $rules ) ) {
+				$data[ $key ] = $value;
 				continue;
 			}
 

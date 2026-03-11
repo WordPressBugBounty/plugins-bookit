@@ -73,7 +73,7 @@ class CustomersController extends DashboardController {
 			);
 		}
 
-		$exist_customer = get_user_by( 'email', $_POST['email'] );
+		$exist_customer = get_user_by( 'email', sanitize_email( $_POST['email'] ) );
 		if ( ! ( $exist_customer instanceof \WP_User ) ) {
 			wp_send_json_success(
 				array(
@@ -109,7 +109,7 @@ class CustomersController extends DashboardController {
 			wp_send_json_success( array( 'exist' => false ) );
 		}
 
-		$exist_customer = get_user_by( 'email', $_POST['email'] );
+		$exist_customer = get_user_by( 'email', sanitize_email( $_POST['email'] ) );
 		if ( $exist_customer instanceof \WP_User ) {
 			wp_send_json_success( array( 'exist' => true ) );
 		} else {
@@ -127,17 +127,26 @@ class CustomersController extends DashboardController {
 			return false;
 		}
 
+		global $wpdb;
 		$data = CleanHelper::cleanData( $_GET, self::getCleanRules() );
 
 		if ( ! empty( $data['limit'] ) ) {
+			$search_where  = '';
+			$search_values = array();
+			if ( ! empty( $data['search'] ) ) {
+				$like          = '%' . $wpdb->esc_like( $data['search'] ) . '%';
+				$search_where  = 'WHERE full_name LIKE %s OR email LIKE %s OR phone LIKE %s';
+				$search_values = array( $like, $like, $like );
+			}
 			$response['customers'] = Customers::get_paged(
 				$data['limit'],
 				$data['offset'],
-				( ! empty( $data['search'] ) ) ? "WHERE full_name LIKE '%{$data['search']}%' OR email LIKE '%{$data['search']}%' OR phone LIKE '%{$data['search']}%'" : '',
+				$search_where,
 				( isset( $data['sort'] ) && in_array( $data['sort'], self::$sortFields ) ) ? $data['sort'] : '',
-				( isset( $data['order'] ) && in_array( $data['order'], array( 'asc', 'desc' ) ) ) ? $data['order'] : ''
+				( isset( $data['order'] ) && in_array( $data['order'], array( 'asc', 'desc' ) ) ) ? $data['order'] : '',
+				$search_values
 			);
-			$response['total'] = ( ! empty( $data['search'] ) ) ? count( $response['customers'] ) : Customers::get_count();
+			$response['total'] = ( ! empty( $search_where ) ) ? count( $response['customers'] ) : Customers::get_count();
 
 			array_walk(
 				$response['customers'],

@@ -10,8 +10,8 @@
 namespace Bookit;
 
 use Bookit\Contracts\Container;
-use Bookit\REST\Provider as REST_Provider;
 use Bookit\Gateways\StripeConnect\Provider as Stripe_Provider;
+use Bookit\REST\Provider as REST_Provider;
 
 /**
  * Class Plugin
@@ -29,7 +29,7 @@ class Plugin {
 	 *
 	 * @var string
 	 */
-	public const VERSION = '2.5.3';
+	public const VERSION = '2.5.4';
 
 	/**
 	 * Stores the base slug for the plugin.

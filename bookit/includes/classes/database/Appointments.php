@@ -226,55 +226,53 @@ class Appointments extends DatabaseModel {
 	public static function get_paged( $limit, $offset, $status = '', $sort = '', $order = '', $filter = array() ) {
 		global $wpdb;
 
-		$search = '';
+		$search_sql    = '';
+		$search_values = array();
 		if ( ! empty( $filter['search'] ) ) {
-			$search = sprintf(
-				" AND (
-				`%s`.phone like '%%%s%%'
-				OR `%s`.full_name like '%%%s%%'
-				OR `%s`.email like '%%%s%%' )",
-				esc_sql( Customers::_table() ),
-				esc_sql( $filter['search'] ),
-				esc_sql( Customers::_table() ),
-				esc_sql( $filter['search'] ),
-				esc_sql( Customers::_table() ),
-				esc_sql( $filter['search'] )
-			);
+			$like          = '%' . $wpdb->esc_like( $filter['search'] ) . '%';
+			$ct            = esc_sql( Customers::_table() );
+			$search_sql    = " AND (`{$ct}`.phone LIKE %s OR `{$ct}`.full_name LIKE %s OR `{$ct}`.email LIKE %s)";
+			$search_values = array( $like, $like, $like );
 		}
 
-		$sql = sprintf(
-			'SELECT
-		                `%1$s`.*,`%5$s`.type as payment_method,
-		                `%5$s`.status as payment_status,
-		                `%5$s`.total as total,
-		                `%2$s`.full_name as customer_name,
-		                `%2$s`.email as customer_email,
-		                `%2$s`.phone as customer_phone,
-		                `%3$s`.full_name as staff_name,
-		                `%4$s`.title as service_name
-			FROM `%1$s`
-			LEFT JOIN `%2$s` ON `%1$s`.customer_id = `%2$s`.id
-			LEFT JOIN `%3$s` ON `%1$s`.staff_id = `%3$s`.id
-			LEFT JOIN `%4$s` ON `%1$s`.service_id = `%4$s`.id
-			LEFT JOIN `%5$s` ON `%1$s`.id = `%5$s`.appointment_id
-			WHERE `%1$s`.status != "%6$s"
-			%7$s %8$s %9$s %10$s ORDER BY `%1$s`.`%11$s` %12$s
-			LIMIT %13$d OFFSET %14$d',
-			esc_sql( self::_table() ),
-			esc_sql( Customers::_table() ),
-			esc_sql( Staff::_table() ),
-			esc_sql( Services::_table() ),
-			esc_sql( Payments::_table() ),
-			esc_sql( self::$delete ),
-			( ! empty( $status ) ) ? sprintf( " AND `%s`.status = '%s'", esc_sql( self::_table() ), esc_sql( $status ) ) : '',
-			( ! empty( $filter['start'] ) ) ? sprintf( " AND `%s`.start_time >= %d", esc_sql( self::_table() ), intval( $filter['start'] ) ) : '',
-			( ! empty( $filter['end'] ) ) ? sprintf( " AND `%s`.end_time <= %d", esc_sql( self::_table() ), intval( $filter['end'] ) ) : '',
-			$search,
-			( empty( $sort ) ) ? esc_sql( static::$primary_key ) : esc_sql( $sort ),
-			( empty( $order ) ) ? 'DESC' : esc_sql( $order ),
-			intval( $limit ),
-			intval( $offset )
-		);
+		$at  = esc_sql( self::_table() );
+		$ct  = esc_sql( Customers::_table() );
+		$st  = esc_sql( Staff::_table() );
+		$svt = esc_sql( Services::_table() );
+		$pt  = esc_sql( Payments::_table() );
+		$del = esc_sql( self::$delete );
+		$pk  = empty( $sort ) ? esc_sql( static::$primary_key ) : esc_sql( $sort );
+		$od  = empty( $order ) ? 'DESC' : esc_sql( $order );
+		$lim = intval( $limit );
+		$off = intval( $offset );
+
+		$status_sql = ! empty( $status ) ? " AND `{$at}`.status = '" . esc_sql( $status ) . "'" : '';
+		$start_sql  = ! empty( $filter['start'] ) ? " AND `{$at}`.start_time >= " . intval( $filter['start'] ) : '';
+		$end_sql    = ! empty( $filter['end'] ) ? " AND `{$at}`.end_time <= " . intval( $filter['end'] ) : '';
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$sql = "SELECT `{$at}`.*,
+		                `{$pt}`.type as payment_method,
+		                `{$pt}`.status as payment_status,
+		                `{$pt}`.total as total,
+		                `{$ct}`.full_name as customer_name,
+		                `{$ct}`.email as customer_email,
+		                `{$ct}`.phone as customer_phone,
+		                `{$st}`.full_name as staff_name,
+		                `{$svt}`.title as service_name
+			FROM `{$at}`
+			LEFT JOIN `{$ct}` ON `{$at}`.customer_id = `{$ct}`.id
+			LEFT JOIN `{$st}` ON `{$at}`.staff_id = `{$st}`.id
+			LEFT JOIN `{$svt}` ON `{$at}`.service_id = `{$svt}`.id
+			LEFT JOIN `{$pt}` ON `{$at}`.id = `{$pt}`.appointment_id
+			WHERE `{$at}`.status != '{$del}'
+			{$status_sql} {$start_sql} {$end_sql} {$search_sql}
+			ORDER BY `{$at}`.`{$pk}` {$od}
+			LIMIT {$lim} OFFSET {$off}";
+
+		if ( ! empty( $search_values ) ) {
+			return $wpdb->get_results( $wpdb->prepare( $sql, $search_values ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		}
 
 		return $wpdb->get_results( $sql, ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 	}
@@ -424,34 +422,30 @@ class Appointments extends DatabaseModel {
 	public static function get_appointments_count( $status, $filter = array() ) {
 		global $wpdb;
 
-		$search = '';
+		$search_sql    = '';
+		$search_values = array();
 		if ( ! empty( $filter['search'] ) ) {
-			$search = sprintf(
-				" AND (
-				`%s`.phone like '%%%s%%'
-				OR `%s`.full_name like '%%%s%%'
-				OR `%s`.email like '%%%s%%' )",
-				esc_sql( Customers::_table() ),
-				esc_sql( $filter['search'] ),
-				esc_sql( Customers::_table() ),
-				esc_sql( $filter['search'] ),
-				esc_sql( Customers::_table() ),
-				esc_sql( $filter['search'] )
-			);
+			$like          = '%' . $wpdb->esc_like( $filter['search'] ) . '%';
+			$ct            = esc_sql( Customers::_table() );
+			$search_sql    = " AND (`{$ct}`.phone LIKE %s OR `{$ct}`.full_name LIKE %s OR `{$ct}`.email LIKE %s)";
+			$search_values = array( $like, $like, $like );
 		}
 
-		return $wpdb->get_var(
-			sprintf(
-				'SELECT COUNT(*) FROM `%1$s` LEFT JOIN `%2$s` ON `%1$s`.customer_id = `%2$s`.id WHERE `%1$s`.status != "%3$s" %4$s %5$s %6$s %7$s',
-				esc_sql( self::_table() ), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-				esc_sql( Customers::_table() ), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-				esc_sql( self::$delete ), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-				( ! empty( $status ) ) ? sprintf( " AND status = '%s'", esc_sql( $status ) ) : '', // phpcs:ignore
-				( ! empty( $filter['start'] ) ) ? sprintf( " AND `%s`.start_time >= %d", esc_sql( self::_table() ), intval( $filter['start'] ) ) : '', // phpcs:ignore
-				( ! empty( $filter['end'] ) ) ? sprintf( " AND `%s`.end_time <= %d", esc_sql( self::_table() ), intval( $filter['end'] ) ) : '', // phpcs:ignore
-				$search // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-			)
-		);
+		$at         = esc_sql( self::_table() );
+		$ct         = esc_sql( Customers::_table() );
+		$del        = esc_sql( self::$delete );
+		$status_sql = ! empty( $status ) ? " AND status = '" . esc_sql( $status ) . "'" : '';
+		$start_sql  = ! empty( $filter['start'] ) ? " AND `{$at}`.start_time >= " . intval( $filter['start'] ) : '';
+		$end_sql    = ! empty( $filter['end'] ) ? " AND `{$at}`.end_time <= " . intval( $filter['end'] ) : '';
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$sql = "SELECT COUNT(*) FROM `{$at}` LEFT JOIN `{$ct}` ON `{$at}`.customer_id = `{$ct}`.id WHERE `{$at}`.status != '{$del}' {$status_sql} {$start_sql} {$end_sql} {$search_sql}";
+
+		if ( ! empty( $search_values ) ) {
+			return $wpdb->get_var( $wpdb->prepare( $sql, $search_values ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		}
+
+		return $wpdb->get_var( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 	}
 
 	/**
