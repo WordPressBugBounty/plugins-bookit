@@ -90,7 +90,7 @@ class Services extends DatabaseModel {
 	}
 
 	/**
-	 * Get All Staff assosiated to service
+	 * Get All Staff associated to service
 	 */
 	public static function get_service_total_staff( $service_id ) {
 		global $wpdb;
@@ -106,7 +106,7 @@ class Services extends DatabaseModel {
 	}
 
 	/**
-	 * Get total Services assosiated to category
+	 * Get total Services associated to category
 	 * @return mixed
 	 */
 	public static function get_total_services_for_category( $category_id ) {

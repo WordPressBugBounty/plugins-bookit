@@ -279,8 +279,9 @@ export default {
                 } else {
                   let payment_data = {
                     nonce: bookit_window.nonces.bookit_book_appointment,
-                    total: data.clear_price,
-                    payment_method_id: result.paymentMethod.id
+                    payment_method_id: result.paymentMethod.id,
+					service_id: data.service_id,
+					staff_id: data.staff_id,
                   };
 
                   await this.axios.post(`${bookit_window.ajax_url}?action=bookit_stripe_intent_payment`, this.generateFormData(payment_data), this.getPostHeaders())
@@ -289,7 +290,7 @@ export default {
                         if ( response.success ) {
                           if ( response.data.requires_action ) {
                             // Card requires Auhentication
-                            await this.handleStripeCard(response.data, data.clear_price);
+                            await this.handleStripeCard(response.data, data);
                           } else {
                             // Order Complete
                             this.stripe.client_secret = response.data.client_secret;
@@ -317,8 +318,9 @@ export default {
                 } else {
                   let payment_data = {
                     nonce: bookit_window.nonces.bookit_book_appointment,
-                    total: data.clear_price,
-                    payment_method_id: result.paymentMethod.id
+                    payment_method_id: result.paymentMethod.id,
+					service_id: data.service_id,
+					staff_id: data.staff_id
                   };
 
                   await this.axios.post(`${bookit_window.ajax_url}?action=bookit_stripeConnect_intent_payment`, this.generateFormData(payment_data), this.getPostHeaders())
@@ -327,7 +329,7 @@ export default {
                         if ( response.success ) {
                           if ( response.data.requires_action ) {
                             // Card requires Auhentication
-                            await this.handleStripeConnectCard(response.data, data.clear_price);
+                            await this.handleStripeConnectCard(response.data, data);
                           } else {
                             // Order Complete
                             this.stripeConnect.client_secret = response.data.client_secret;
@@ -415,7 +417,7 @@ export default {
           this.stripe.card.mount(this.$refs.stripe_card);
         });
       },
-      async handleStripeCard( data, clear_price ) {
+      async handleStripeCard( data, formData ) {
         await this.stripe.stripe.handleCardAction( data.client_secret )
             .then( async ( card_action_result ) => {
                 if ( card_action_result.error ) {
@@ -424,8 +426,9 @@ export default {
                 } else if ( card_action_result.paymentIntent.status === 'requires_confirmation' ) {
                     let payment_data = {
                         nonce: bookit_window.nonces.bookit_book_appointment,
-                        total: clear_price,
-                        payment_intent_id: data.payment_intent_id
+                        payment_intent_id: data.payment_intent_id,
+						service_id: formData.service_id,
+						staff_id: formData.staff_id
                     };
 
                     // Retrieve Payment
@@ -466,7 +469,7 @@ export default {
           this.stripeConnect.card.mount( this.$refs.stripe_card );
         } );
       },
-      async handleStripeConnectCard(data, clear_price) {
+      async handleStripeConnectCard(data, formData) {
 	        await this.stripeConnect.stripe.handleCardAction(data.client_secret)
 	            .then(async (card_action_result) => {
 	                if (card_action_result.error) {
@@ -475,8 +478,9 @@ export default {
 	                } else if (card_action_result.paymentIntent.status === 'requires_confirmation') {
 	                    let payment_data = {
 	                        nonce: bookit_window.nonces.bookit_book_appointment,
-	                        total: clear_price,
-	                        payment_intent_id: data.payment_intent_id
+	                        payment_intent_id: data.payment_intent_id,
+							service_id: formData.service_id,
+							staff_id: formData.staff_id
 	                    };
 
 	                    // Retrieve Payment

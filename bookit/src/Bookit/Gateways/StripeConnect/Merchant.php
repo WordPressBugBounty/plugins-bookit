@@ -7,6 +7,7 @@ use Bookit\Vendor\StellarWP\Arrays\Arr;
 use Bookit\Classes\Vendor\Payments;
 use Bookit\Classes\Database\Payments as PaymentDb;
 use Bookit\Classes\Admin\SettingsController;
+use Bookit\Classes\Database\Staff_Services;
 
 /**
  * Class Merchant
@@ -497,31 +498,49 @@ class Merchant extends Abstract_Merchant {
 	 * Create Payment Method Ajax Action
 	 *
 	 * @since 2.5.0
+	 * @since 2.5.4.1 Validate the PaymentIntent amount matches the expected service price.
 	 *
 	 * @return array Ajax response.
 	 */
 	public function intent_payment() {
 		check_ajax_referer( 'bookit_book_appointment', 'nonce' );
 
-		if ( empty( $_POST['total'] ) || ( empty( $_POST['payment_method_id'] ) && empty( $_POST['payment_intent_id'] ) ) ) {
+		if ( empty($_POST['staff_id']) || empty( $_POST['service_id'] ) || ( empty( $_POST['payment_method_id'] ) && empty( $_POST['payment_intent_id'] ) ) ) {
 			return wp_send_json_error( [ 'message' => __( 'Error occurred during Payment request!', 'bookit'  ) ] );
 		}
 
+		// Clean service_id and staff_id
+		$service_id = absint( $_POST['service_id'] );
+		$staff_id   = absint( $_POST['staff_id'] );
+
+		$service_price = Staff_Services::get_service_price_by_staff( $service_id, $staff_id );
+		if( ! $service_price || is_wp_error( $service_price ) ) {
+			return wp_send_json_error( [ 'message' => __( 'Error occurred during Payment request!', 'bookit'  ) ] );
+		}
+
+		$currency        = get_option_by_path( 'bookit_settings.currency' ) ?: SettingsController::$default_currency;
+		$service_amount = $this->get_amount( $service_price, $currency );
+
 		if ( ! empty( $_POST['payment_intent_id'] ) ) {
 			// Confirm the PaymentIntent to finalize payment after handling a required action
-			$retrieve = wp_remote_get( esc_url( $this->url . $_POST['payment_intent_id'] ), [ 'headers' => $this->get_request_header() ] );
+			$payment_intent_id = \sanitize_text_field( $_POST['payment_intent_id'] );
+			$retrieve = wp_remote_get( esc_url( $this->url . $payment_intent_id ), [ 'headers' => $this->get_request_header() ] );
 			$retrieve = wp_remote_retrieve_body( $retrieve );
 			$retrieve = json_decode( $retrieve, true );
+
+			// Validate the PaymentIntent amount matches the expected service price to prevent
+			// an attacker from confirming a PaymentIntent created for a cheaper service.
+			if ( empty( $retrieve['amount'] ) || (int) $retrieve['amount'] !== (int) $service_amount ) {
+				return wp_send_json_error( [ 'message' => __( 'Error occurred during Payment request!', 'bookit' ) ] );
+			}
+
 			$request  = wp_remote_post( esc_url( $this->url . $retrieve['id'] . '/confirm' ), [ 'headers' => $this->get_request_header() ] );
 		} elseif ( ! empty( $_POST['payment_method_id'] ) ) {
 			// Create new PaymentIntent with a PaymentMethod ID from the client.
-			$currency = get_option_by_path( 'bookit_settings.currency' ) ?: SettingsController::$default_currency;
-			$amount   = $this->get_amount( $_POST['total'], $currency );
-
 			$args    = [
-				'amount'              => $amount,
+				'amount'              => $service_amount,
 				'currency'            => $currency,
-				'payment_method'      => $_POST['payment_method_id'],
+				'payment_method'      => sanitize_text_field( $_POST['payment_method_id'] ),
 				'confirmation_method' => 'manual',
 				'confirm'             => 'true',
 			];

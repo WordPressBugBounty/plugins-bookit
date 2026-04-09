@@ -24,7 +24,7 @@ export default {
 					</div>
 				  </div>
 				</div>
-	  
+
 				<div class="bookit-modal-body">
 				  <div class="bookit-row">
 					<div class="form-group">
@@ -73,20 +73,20 @@ export default {
 					</div>
 				  </div>
 				</div>
-				
+
 				<div class="bookit-modal-footer bookit-row">
 				  <div class="col-2-3" v-if="getStaffClearPrice(staff, service) > 0">
 					<div v-for="(item, key) in payment_methods" class="payment-method">
 					  <input type="radio" :id="key" class="display-inline-block" v-model="payment_method" :value="key">
 					  <label :for="key" class="display-inline-block">{{ translations[key] }}</label>
-					  
+
 					  <span class="is-pro" v-if="key === 'stripe'">
 						  <span class="pro-tooltip">
 							 pro
 							 <span style="visibility: hidden;" class="pro-tooltiptext">Feature Available <br> in Pro Version</span>
 						  </span>
 					  </span>
-					  
+
 					</div>
 				    <div v-if="payment_method === 'stripeConnect'" class="payment-method">
 				      <div ref="stripe_card"></div>
@@ -110,11 +110,11 @@ export default {
 				<h3 class="success-title">{{ translations.success_booking }}</h3>
 				<h3 class="print-only">{{ translations.reservation_confirmation }}</h3>
 				<p>{{ translations.booking_email_sent }}</p>
-				
+
 				<div v-if="redirect_url.length > 0" class="appointment-info redirect-answer">
 				  <div class="text-bold">{{ translations.you_will_be_redirected }} <span class="text-capitalize payment-text">{{ payment_method }}</span> {{ translations.in }} {{ countDown }} {{ translations.seconds }}...</div>
 				</div>
-				
+
 				<div class="appointment-details text-left">
 				  <div class="bookit-row">
 					<div class="col-2">
@@ -383,8 +383,9 @@ export default {
 		                    } else {
 		                        let payment_data = {
 		                            nonce: bookit_window.nonces.bookit_book_appointment,
-		                            total: data.clear_price,
-		                            payment_method_id: result.paymentMethod.id
+									payment_method_id: result.paymentMethod.id,
+		                            service_id: data.service_id,
+									staff_id: data.staff_id
 		                        };
 
 		                        await this.axios.post(`${bookit_window.ajax_url}?action=bookit_stripe_intent_payment`, this.generateFormData(payment_data), this.getPostHeaders())
@@ -393,7 +394,7 @@ export default {
 		                                if (response && response.success) {
 		                                    if (response.data.requires_action) {
 		                                        // Card requires Authentication
-		                                        await this.handleStripeCard(response.data, data.clear_price);
+		                                        await this.handleStripeCard(response.data, data);
 		                                    } else {
 		                                        // Order Complete
 		                                        this.stripe.client_secret = response.data.client_secret;
@@ -423,8 +424,9 @@ export default {
 		                    } else {
 		                        let payment_data = {
 		                            nonce: bookit_window.nonces.bookit_book_appointment,
-		                            total: data.clear_price,
-		                            payment_method_id: result.paymentMethod.id
+									payment_method_id: result.paymentMethod.id,
+		                            service_id: data.service_id,
+									staff_id: data.staff_id
 		                        };
 
 		                        await this.axios.post(`${bookit_window.ajax_url}?action=bookit_stripeConnect_intent_payment`, this.generateFormData(payment_data), this.getPostHeaders())
@@ -433,7 +435,7 @@ export default {
 		                                if (response && response.success) {
 		                                    if (response.data.requires_action) {
 		                                        // Card requires Authentication
-		                                        await this.handleStripeConnectCard(response.data, data.clear_price);
+		                                        await this.handleStripeConnectCard(response.data, data);
 		                                    } else {
 		                                        // Order Complete
 		                                        this.stripeConnect.client_secret = response.data.client_secret;
@@ -535,7 +537,7 @@ export default {
 				this.stripe.card.mount( this.$refs.stripe_card );
 			} );
 		},
-		async handleStripeCard( data, clear_price ) {
+		async handleStripeCard( data, formData ) {
 			await this.stripe.stripe.handleCardAction( data.client_secret )
 				.then( async ( card_action_result ) => {
 					if ( card_action_result.error ) {
@@ -544,8 +546,9 @@ export default {
 					} else if ( card_action_result.paymentIntent.status === 'requires_confirmation' ) {
 						let payment_data = {
 							nonce: bookit_window.nonces.bookit_book_appointment,
-							total: clear_price,
-							payment_intent_id: data.payment_intent_id
+							payment_intent_id: data.payment_intent_id,
+							staff_id: formData.staff_id,
+							service_id: formData.service_id
 						};
 
 						// Retrieve Payment
@@ -579,7 +582,7 @@ export default {
 				this.stripeConnect.card.mount(this.$refs.stripe_card);
 			});
 		},
-		async handleStripeConnectCard(data, clear_price) {
+		async handleStripeConnectCard(data, formData) {
 			await this.stripeConnect.stripe.handleCardAction(data.client_secret)
 				.then(async (card_action_result) => {
 					if (card_action_result.error) {
@@ -588,8 +591,9 @@ export default {
 					} else if (card_action_result.paymentIntent.status === 'requires_confirmation') {
 						let payment_data = {
 							nonce: bookit_window.nonces.bookit_book_appointment,
-							total: clear_price,
-							payment_intent_id: data.payment_intent_id
+							payment_intent_id: data.payment_intent_id,
+							staff_id: formData.staff_id,
+							service_id: formData.service_id
 						};
 
 						// Retrieve Payment

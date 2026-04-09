@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => 'stellarwp/bookit',
-        'pretty_version' => 'dev-release/M26.chikorita',
-        'version' => 'dev-release/M26.chikorita',
-        'reference' => 'eb3a5d4351cd588068b6ff5503f99dedf58ff02c',
+        'pretty_version' => 'dev-fix/SVUL-67-intent-payment-ajax-fix',
+        'version' => 'dev-fix/SVUL-67-intent-payment-ajax-fix',
+        'reference' => 'f2c900dfc6381f7493c0d3fd71d47fe35a3414d7',
         'type' => 'wordpress-plugin',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -47,9 +47,9 @@
             'dev_requirement' => false,
         ),
         'stellarwp/bookit' => array(
-            'pretty_version' => 'dev-release/M26.chikorita',
-            'version' => 'dev-release/M26.chikorita',
-            'reference' => 'eb3a5d4351cd588068b6ff5503f99dedf58ff02c',
+            'pretty_version' => 'dev-fix/SVUL-67-intent-payment-ajax-fix',
+            'version' => 'dev-fix/SVUL-67-intent-payment-ajax-fix',
+            'reference' => 'f2c900dfc6381f7493c0d3fd71d47fe35a3414d7',
             'type' => 'wordpress-plugin',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
