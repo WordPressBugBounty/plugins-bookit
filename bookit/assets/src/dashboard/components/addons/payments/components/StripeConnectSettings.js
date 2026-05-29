@@ -19,11 +19,11 @@ export default {
 
                   <div class="switcher">
                     <div class="bookit-switch">
-                      <input type="checkbox" v-model="settings_object.payments.stripeConnect.test_mode" checked>
+                      <input type="checkbox" v-model="settings_object.payments.stripeConnect.test_mode">
                       <label></label>
                     </div>
                     <span class="label for-switcher">{{ translations.stripe_connect_test_mode_label }}</span>
-                    <div 
+                    <div
                     	class="bookit_admin-settings-payments-stripe-modal-content-section"
 	                    v-html="translations.stripe_connect_test_mode_description"
                     >

@@ -44,6 +44,20 @@ class Return_Endpoint extends Abstract_REST_Endpoint {
 	protected $plugin_settings;
 
 	/**
+	 * The key used for the connect nonce transient.
+	 *
+	 * @since 2.5.5
+	 */
+	private const CONNECT_KEY = 'bookit_stripe_connect_nonce';
+
+	/**
+	 * The key used for the disconnect nonce transient.
+	 *
+	 * @since 2.5.5
+	 */
+	private const DISCONNECT_KEY = 'bookit_stripe_disconnect_nonce';
+
+	/**
 	 * Return Endpoint constructor.
 	 *
 	 * @since 2.5.0
@@ -73,6 +87,60 @@ class Return_Endpoint extends Abstract_REST_Endpoint {
 	}
 
 	/**
+	 * Returns the current Stripe disconnect nonce token, generating and storing
+	 * a new one if none exists or the existing one has expired.
+	 *
+	 * @since 2.5.5
+	 *
+	 * @return string The disconnect nonce token.
+	 */
+	public function get_stripe_disconnect_token() {
+		$token = get_transient( self::DISCONNECT_KEY );
+
+		if ( $token !== false ) {
+			return $token;
+		}
+
+		return $this->generate_return_token( self::DISCONNECT_KEY );
+	}
+
+	/**
+	 * Returns the current Stripe connect nonce token, generating and storing
+	 * a new one if none exists or the existing one has expired.
+	 *
+	 * @since 2.5.5
+	 *
+	 * @return string The connect nonce token.
+	 */
+	public function get_stripe_connect_token() {
+		$token = get_transient( self::CONNECT_KEY );
+
+		if ( $token !== false ) {
+			return $token;
+		}
+
+		return $this->generate_return_token( self::CONNECT_KEY );
+	}
+
+	/**
+	 * Generate a one-time token for the Stripe return URL and store it in a transient.
+	 *
+	 * Using a transient (rather than a user-scoped WP nonce) allows the token to be
+	 * verified even when the REST API request arrives without cookie authentication
+	 * (e.g. a browser redirect from WhoDat after the admin initiates a connect/disconnect).
+	 *
+	 * @since 2.5.5
+	 *
+	 * @param string $transient_key The transient key under which to store the token.
+	 * @return string A random 32-character token.
+	 */
+	private function generate_return_token( $transient_key ) {
+		$token = wp_generate_password( 32, false );
+		set_transient( $transient_key, $token, HOUR_IN_SECONDS );
+		return $token;
+	}
+
+	/**
 	 * Check if the current user has permission to connect Stripe accounts.
 	 *
 	 * @since 2.5.1
@@ -80,7 +148,32 @@ class Return_Endpoint extends Abstract_REST_Endpoint {
 	 * @return bool True if user has permission, false otherwise.
 	 */
 	public function check_permission() {
-		return current_user_can( 'manage_options' );
+		if ( current_user_can( 'manage_options' ) ) {
+			return true;
+		}
+
+		$stripe_obj = bookit_get_request_var( 'stripe' );
+		if ( empty( $stripe_obj ) ) return false;
+
+		$payload = $this->decode_payload( $stripe_obj );
+		if ( ! empty( $payload->nonce ) ) {
+			$connect_nonce = $this->get_stripe_connect_token();
+			$disconnect_nonce = $this->get_stripe_disconnect_token();
+			if (
+				(
+					$connect_nonce &&
+					hash_equals( $connect_nonce, $payload->nonce )
+				) ||
+				(
+					$disconnect_nonce &&
+					hash_equals( $disconnect_nonce, $payload->nonce )
+				)
+			) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**
@@ -211,13 +304,20 @@ class Return_Endpoint extends Abstract_REST_Endpoint {
 		bookit( Merchant::class )->delete_signup_data();
 		Gateway::disable();
 
+		// Enable the Stripe Connect payment gateway in the settings.
+		$settings = SettingsController::get_settings();
+		if ( empty( $settings ) || ! isset( $settings['payments'] ) ) return;
+
+		$settings['payments']['stripeConnect']['enabled'] = false;
+		SettingsController::save_settings( $settings );
+
 		$query_args = [
 			'stripe_disconnected' => 1,
 		];
 
 		$url_args = array_merge( $query_args, $reason );
 
-		$url = $this->plugin_settings->get_url( $url_args, 'payment' );
+		$url = $this->plugin_settings->get_url( $url_args, 'payments' );
 
 		wp_safe_redirect( $url );
 		exit();

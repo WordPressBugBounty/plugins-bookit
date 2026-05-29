@@ -3,6 +3,7 @@
 namespace Bookit\Gateways\StripeConnect;
 
 use Bookit\Gateways\Contracts\Abstract_Signup;
+use Bookit\Gateways\StripeConnect\REST\Return_Endpoint;
 
 /**
  * Class Signup.
@@ -81,6 +82,7 @@ class Signup extends Abstract_Signup {
 		return $this->whodat->get_api_url( 'connect', [
 				'token'      => $this->get_client_id(),
 				'return_url' => $this->whodat->get_api_url( 'connected' ),
+				'nonce'      => bookit( Return_Endpoint::class )->get_stripe_connect_token(),
 			] );
 
 	}
@@ -97,6 +99,7 @@ class Signup extends Abstract_Signup {
 		return $this->whodat->get_api_url( 'disconnect', [
 				'stripe_user_id' => $this->merchant->get_client_id(),
 				'return_url'     => rest_url( $this->signup_return_path ),
+				'nonce'          => bookit( Return_Endpoint::class )->get_stripe_disconnect_token(),
 			] );
 	}
 

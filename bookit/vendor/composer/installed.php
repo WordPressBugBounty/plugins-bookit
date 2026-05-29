@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => 'stellarwp/bookit',
-        'pretty_version' => 'dev-fix/SVUL-67-intent-payment-ajax-fix',
-        'version' => 'dev-fix/SVUL-67-intent-payment-ajax-fix',
-        'reference' => 'f2c900dfc6381f7493c0d3fd71d47fe35a3414d7',
+        'pretty_version' => 'dev-release/M26.gardevoir',
+        'version' => 'dev-release/M26.gardevoir',
+        'reference' => 'e21799fad34d6ea09a2238e80bafcb6f37382dd6',
         'type' => 'wordpress-plugin',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -47,9 +47,9 @@
             'dev_requirement' => false,
         ),
         'stellarwp/bookit' => array(
-            'pretty_version' => 'dev-fix/SVUL-67-intent-payment-ajax-fix',
-            'version' => 'dev-fix/SVUL-67-intent-payment-ajax-fix',
-            'reference' => 'f2c900dfc6381f7493c0d3fd71d47fe35a3414d7',
+            'pretty_version' => 'dev-release/M26.gardevoir',
+            'version' => 'dev-release/M26.gardevoir',
+            'reference' => 'e21799fad34d6ea09a2238e80bafcb6f37382dd6',
             'type' => 'wordpress-plugin',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
