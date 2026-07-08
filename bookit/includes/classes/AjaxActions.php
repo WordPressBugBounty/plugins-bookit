@@ -42,8 +42,8 @@ class AjaxActions {
 		self::addAction( 'bookit_admin_day_appointments', array( AppointmentController::class, 'get_admin_day_appointments' ), true );
 		self::addAction( 'bookit_admin_month_appointments', array( AppointmentController::class, 'get_admin_month_appointments' ), true );
 		self::addAction( 'bookit_is_free_appointment', array( AppointmentController::class, 'is_free_appointment' ), true );
-		self::addAction( 'bookit_get_wp_user_by_email', array( CustomersController::class, 'get_wp_user_by_email' ), true );
-		self::addAction( 'bookit_validate_wp_user_if_exist', array( CustomersController::class, 'validate_wp_user_if_exist' ), true );
+		self::addAction( 'bookit_login', array( CustomerController::class, 'login' ), true );
+		self::addAction( 'bookit_register', array( CustomerController::class, 'register' ), true );
 
 		if ( is_admin() ) {
 			self::addAction( 'bookit_get_appointment', array( AppointmentsController::class, 'get_appointment_by_id' ) );

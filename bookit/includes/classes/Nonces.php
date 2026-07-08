@@ -18,8 +18,8 @@ class Nonces {
 			'bookit_admin_month_appointments',
 			'bookit_appointment_status',
 			'bookit_is_free_appointment',
-			'bookit_get_wp_user_by_email',
-			'bookit_validate_wp_user_if_exist',
+			'bookit_login',
+			'bookit_register',
 		);
 
 		$nonces = array();

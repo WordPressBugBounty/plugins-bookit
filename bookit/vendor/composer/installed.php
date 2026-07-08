@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => 'stellarwp/bookit',
-        'pretty_version' => 'dev-release/M26.gardevoir',
-        'version' => 'dev-release/M26.gardevoir',
-        'reference' => 'e21799fad34d6ea09a2238e80bafcb6f37382dd6',
+        'pretty_version' => 'dev-main',
+        'version' => 'dev-main',
+        'reference' => '45ef9f2f41c7ca0c8464404e346079b63f20556a',
         'type' => 'wordpress-plugin',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -47,9 +47,9 @@
             'dev_requirement' => false,
         ),
         'stellarwp/bookit' => array(
-            'pretty_version' => 'dev-release/M26.gardevoir',
-            'version' => 'dev-release/M26.gardevoir',
-            'reference' => 'e21799fad34d6ea09a2238e80bafcb6f37382dd6',
+            'pretty_version' => 'dev-main',
+            'version' => 'dev-main',
+            'reference' => '45ef9f2f41c7ca0c8464404e346079b63f20556a',
             'type' => 'wordpress-plugin',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

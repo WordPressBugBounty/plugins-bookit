@@ -50,11 +50,18 @@ export default {
     settings () {
       return this.$store.getters.getSettings;
     },
+    authRequired() {
+      return this.navigation.some( step => step.key === 'auth' ) && !this.appointment.user_id;
+    },
   },
   created() {
   },
   methods: {
     isStepEnabled ( step ) {
+      // Nothing past the login gate is reachable until the visitor authenticates.
+      if ( this.authRequired && step.key !== 'auth' ) {
+        return false;
+      }
       if ( step.hasOwnProperty('class') && step.class == 'skip' ) {
         return false;
       }

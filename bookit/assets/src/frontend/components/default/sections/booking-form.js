@@ -1,4 +1,5 @@
 import DOMPurify from 'dompurify';
+import AuthPanel from '@components/auth-panel'
 
 export default {
   template: `
@@ -26,7 +27,7 @@ export default {
 				</div>
 
 				<div class="bookit-modal-body">
-				  <div class="bookit-row">
+				  <div class="bookit-row" v-if="!needsAuth">
 					<div class="form-group">
 					  <span class="error-message" v-if="errors.full_name">{{ errors.full_name }}</span>
 					  <input type="text" id="bookit_full_name" v-model="full_name" :placeholder="translations.full_name">
@@ -35,37 +36,24 @@ export default {
 					  <div v-if="!errors.full_name" class="validation-icon has-success-icon"></div>
 					</div>
 				  </div>
-				  <div class="bookit-row">
+				  <div class="bookit-row" v-if="!needsAuth && settings.booking_type !== 'registered'">
 					<div class="form-group col-2">
 					  <span class="error-message" v-if="errors.email">{{ errors.email }}</span>
-					  <input @change="checkEmailBeforeBook" type="email" id="bookit_email" v-model="email" :placeholder="translations.email">
+					  <input type="email" id="bookit_email" v-model="email" :placeholder="translations.email">
 					  <label for="bookit_email">{{ translations.email }}</label>
 					  <div v-if="errors.email" class="validation-icon has-error-icon"></div>
 					  <div v-if="!errors.email" class="validation-icon has-success-icon"></div>
 					</div>
 				  </div>
-				  <div class="bookit-row">
+				  <div class="bookit-row" v-if="!needsAuth">
 					<div class="form-group col-2">
 					  <span class="error-message" v-if="errors.phone">{{ errors.phone }}</span>
 					  <input type="text" id="bookit_phone" v-model="phone" :placeholder="translations.phone">
 					  <label for="bookit_phone">{{ translations.phone }}</label>
 					</div>
 				  </div>
-				  <div v-if="settings.booking_type == 'registered' && !user_id" class="bookit-row">
-					<div class="form-group col-2">
-					  <span class="error-message" v-if="errors.password">{{ errors.password }}</span>
-					  <input type="password" id="bookit_password" v-model="password" :placeholder="translations.password">
-					  <label for="bookit_password">{{ translations.password }}</label>
-					  <div v-if="errors.password" class="validation-icon has-error-icon"></div>
-					  <div v-if="!errors.password" class="validation-icon has-success-icon"></div>
-					</div>
-					<div v-if="!existWpUser" class="form-group col-2">
-					  <span class="error-message" v-if="errors.password_confirmation">{{ errors.password_confirmation }}</span>
-					  <input type="password" id="bookit_password_confirmation" v-model="password_confirmation" :placeholder="translations.password_confirmation">
-					  <label for="bookit_password_confirmation">{{ translations.password_confirmation }}</label>
-					  <div v-if="errors.password" class="validation-icon has-error-icon"></div>
-					  <div v-if="!errors.password" class="validation-icon has-success-icon"></div>
-					</div>
+				  <div v-if="needsAuth" class="bookit-row">
+					<auth-panel @authenticated="onAuthenticated"></auth-panel>
 				  </div>
 				  <div v-if="errors.message !== undefined" class="bookit-row">
 					<div class="bookit-alert bookit-alert-danger">
@@ -75,7 +63,7 @@ export default {
 				</div>
 
 				<div class="bookit-modal-footer bookit-row">
-				  <div class="col-2-3" v-if="getStaffClearPrice(staff, service) > 0">
+				  <div class="col-2-3" v-if="getStaffClearPrice(staff, service) > 0 && !needsAuth">
 					<div v-for="(item, key) in payment_methods" class="payment-method">
 					  <input type="radio" :id="key" class="display-inline-block" v-model="payment_method" :value="key">
 					  <label :for="key" class="display-inline-block">{{ translations[key] }}</label>
@@ -96,7 +84,7 @@ export default {
 					</div>
 				  </div>
 				  <div class="col-3 text-right">
-					<button type="submit" class="modal-default-button">{{ translations.book_now }}</button>
+					<button v-if="!needsAuth" type="submit" class="modal-default-button">{{ translations.book_now }}</button>
 				  </div>
 				</div>
 			  </form>
@@ -172,6 +160,7 @@ export default {
 	</div>
   </transition>
   `,
+  components: { AuthPanel },
   data: () => ({
 	appointment: {},
 	success: false,
@@ -202,11 +191,13 @@ export default {
 	translations: bookit_window.translations,
 	nonce: null,
 	isOpenAddToCalendar: false,
-	existWpUser: false,
   }),
   computed: {
 	settings () {
 	  return this.$store.getters.getSettings;
+	},
+	needsAuth () {
+	  return this.settings.booking_type == 'registered' && !this.user_id;
 	},
 	service () {
 	  return this.$store.getters.getSelectedService;
@@ -333,22 +324,13 @@ export default {
 		},
 		/** Add to calendar methods | End **/
 
-		/**
-		 * Check is user email already exist
-		 * just for registered booking_type and
-		 * if user not logged in
-		 * @returns {Promise<void>}
-		 */
-		async checkEmailBeforeBook() {
-			if ( this.settings.booking_type === 'registered' && !this.user_id ) {
-				let data = {
-					nonce: ( this.nonce !== null ) ? this.nonce : bookit_window.nonces.bookit_get_wp_user_by_email,
-					email: this.email,
-				};
-				await this.axios.post( `${ bookit_window.ajax_url }?action=bookit_get_wp_user_by_email`, this.generateFormData( data ), this.getPostHeaders() ).then( ( res ) => {
-					this.existWpUser = res.data.data.exist;
-				} );
-			}
+		/** Continue booking once the visitor authenticates via the gate. **/
+		onAuthenticated( user ) {
+			this.user_id   = user.ID;
+			this.full_name = ( user.customer && user.customer.full_name ) ? user.customer.full_name : user.display_name;
+			this.email     = user.user_email;
+			this.phone     = ( user.customer && user.customer.phone ) ? user.customer.phone : this.phone;
+			this.nonce     = user.nonce;
 		},
 		async bookNow() {
 		    this.loading = true;
@@ -465,6 +447,13 @@ export default {
 
 		        await this.axios.post(`${bookit_window.ajax_url}?action=bookit_book_appointment`, this.generateFormData(data), this.getPostHeaders()).then((res) => {
 		            let response = res.data;
+
+		            // Booking requires an authenticated session; fall back to the gate.
+		            if (response && !response.success && response.data && response.data.login_required) {
+		                this.user_id = null;
+		                this.errors = { message: response.data.message };
+		                return;
+		            }
 
 		            if (response && response.data && response.data.errors && Object.keys(response.data.errors).length > 0) {
 		                this.errors = response.data.errors;
@@ -623,18 +612,6 @@ export default {
 
 			if ( this.phone && !this.validPhone( this.phone ) ) {
 				this.errors.phone = bookit_window.translations.invalid_phone;
-			}
-
-			if (
-				this.settings.booking_type === 'registered' &&
-				!this.existWpUser &&
-				!this.user_id &&
-				(
-					!this.password
-					|| this.password.length === 0
-					|| this.password !== this.password_confirmation )
-			) {
-				this.errors.password_confirmation = bookit_window.translations.confirmation_mismatched;
 			}
 
 			return Object.keys( this.errors ).length === 0;

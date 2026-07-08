@@ -59,62 +59,40 @@ class CustomersController extends DashboardController {
 		);
 	}
 
-	/** Check is email in wp users and password is correct */
-	public static function validate_wp_user_if_exist() {
-		check_ajax_referer( 'bookit_validate_wp_user_if_exist', 'nonce' );
-
-		if ( ! isset( $_POST['email'] ) || ( isset( $_POST['email'] ) && empty( $_POST['email'] ) )
-			|| ! isset( $_POST['password'] ) || ( isset( $_POST['password'] ) && empty( $_POST['password'] ) ) ) {
-			wp_send_json_success(
-				array(
-					'exist' => false,
-					'valid' => false,
-				)
-			);
-		}
-
-		$exist_customer = get_user_by( 'email', sanitize_email( $_POST['email'] ) );
-		if ( ! ( $exist_customer instanceof \WP_User ) ) {
-			wp_send_json_success(
-				array(
-					'exist' => false,
-					'valid' => false,
-				)
-			);
-		}
-
-		if ( wp_check_password( $_POST['password'], $exist_customer->data->user_pass, $exist_customer->ID ) ) {
-			wp_send_json_success(
-				array(
-					'exist' => true,
-					'valid' => true,
-				)
-			);
-		}
-		wp_send_json_success(
-			array(
-				'exist' => true,
-				'valid' => false,
-			)
-		);
-	}
 	/**
-	 * @param $data
-	 * get wp user by email if exist
+	 * Whether the account-lookup endpoint should respond. It supports the
+	 * logged-out registered-booking flow, so limit availability to that case.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @return bool
+	 */
+	private static function account_lookup_available() {
+		return is_user_logged_in()
+			|| 'registered' === get_option_by_path( 'bookit_settings.booking_type' );
+	}
+
+	/**
+	 * Tell the registered-booking form whether an account already exists for
+	 * an email. Limited to the registered-booking flow.
+	 *
+	 * @since 2.6.0
 	 */
 	public static function get_wp_user_by_email() {
 		check_ajax_referer( 'bookit_get_wp_user_by_email', 'nonce' );
 
-		if ( ! isset( $_POST['email'] ) || ( isset( $_POST['email'] ) && empty( $_POST['email'] ) ) ) {
+		if ( ! self::account_lookup_available() ) {
+			wp_send_json_error( array( 'message' => __( 'Not available.', 'bookit' ) ) );
+		}
+
+		$email = isset( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '';
+		if ( empty( $email ) ) {
 			wp_send_json_success( array( 'exist' => false ) );
 		}
 
-		$exist_customer = get_user_by( 'email', sanitize_email( $_POST['email'] ) );
-		if ( $exist_customer instanceof \WP_User ) {
-			wp_send_json_success( array( 'exist' => true ) );
-		} else {
-			wp_send_json_success( array( 'exist' => false ) );
-		}
+		$exist = get_user_by( 'email', $email ) instanceof \WP_User;
+
+		wp_send_json_success( array( 'exist' => $exist ) );
 	}
 
 	/**

@@ -10,6 +10,64 @@
   .hidden{
     display: none;
   }
+  .bookit-auth {
+    width: 100%;
+    max-width: 520px;
+    margin: 10px auto;
+    .bookit-auth-nav {
+      display: flex;
+      margin-bottom: 16px;
+      .bookit-auth-tab {
+        flex: 1;
+        height: auto;
+        min-width: 0;
+        padding: 10px 0;
+        border-radius: 0;
+        background-color: transparent;
+        color: $base-color;
+        text-transform: uppercase;
+        border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+        &.active {
+          font-weight: bold;
+          border-bottom: 2px solid $base-color;
+        }
+      }
+    }
+    .bookit-auth-message {
+      color: $red;
+      margin-bottom: 12px;
+    }
+    .bookit-auth-field {
+      margin-bottom: 16px;
+      input {
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        outline: none;
+        height: 45px;
+        width: 100%;
+        border-radius: 4px;
+        border: 1px solid #dddddd;
+        background-color: $white;
+        text-indent: 20px;
+        color: $black;
+        font-size: 16px;
+      }
+      .bookit-auth-error {
+        color: $red;
+        font-size: 12px;
+        margin-top: 4px;
+      }
+    }
+    .bookit-auth-intro {
+      color: $base-color;
+      margin-bottom: 12px;
+    }
+    .bookit-auth-action {
+      margin-top: 12px;
+      text-align: right;
+    }
+  }
 
   button {
     height: 45px;
@@ -2215,8 +2273,7 @@ and (min-device-width: 0px){
           height: max-content;
           padding-bottom: 20px;
           div{
-            width: 100%;
-            display: contents;
+            width: calc(100% - 10px);
             position: relative;
             padding-top: 5px;
           }

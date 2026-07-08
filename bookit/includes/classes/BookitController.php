@@ -166,8 +166,24 @@ class BookitController {
 		return $result;
 	}
 
+	/**
+	 * @since 2.6.0 Prepend a login step for Registered mode when the visitor is logged out.
+	 */
 	private static function get_step_naviation() {
-		$step_navigation = array(
+		$step_navigation = array();
+
+		$settings = SettingsController::get_settings();
+		if ( 'registered' == $settings['booking_type'] && ! is_user_logged_in() ) {
+			$step_navigation[] = array(
+				'key'            => 'auth',
+				'menu'           => __( 'Login', 'bookit' ),
+				'title'          => __( 'Login', 'bookit' ),
+				'requiredFields' => array(),
+				'validation'     => false,
+			);
+		}
+
+		$step_navigation = array_merge( $step_navigation, array(
 			array(
 				'key'            => 'category',
 				'menu'           => __( 'Category', 'bookit' ),
@@ -237,7 +253,7 @@ class BookitController {
 				'requiredFields' => array(),
 				'validation'     => false,
 			),
-		);
+		) );
 
 		return $step_navigation;
 	}

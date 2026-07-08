@@ -6,7 +6,7 @@ export default {
     appointment: {},
     appointments: {},
     errors: {},
-    existWpUserData: { exist: false, valid: false },
+    authTab: 'login',
     categories: [],
     currentStepKey: 'category',
     parentBlockWidth: '',
@@ -74,7 +74,7 @@ export default {
     getCurrentLanguage: state => state.currentLanguage,
     getStripe: state => state.stripe,
     getParentBlockWidth: state => state.parentBlockWidth,
-    getExistWpUserData: state => state.existWpUserData,
+    getAuthTab: state => state.authTab,
   },
   mutations: {
     setAppointment(state, appointment) {
@@ -173,8 +173,8 @@ export default {
     setParentBlockWidth(state, width) {
       state.parentBlockWidth = width;
     },
-    setExistWpUserData(state, data ) {
-      state.existWpUserData = data;
+    setAuthTab(state, tab ) {
+      state.authTab = tab;
     },
   },
   actions: {

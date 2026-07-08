@@ -108,6 +108,9 @@ class AppointmentController {
 
 	/**
 	 * Validation
+	 *
+	 * @since 2.6.0 Booking identity is derived from the authenticated session in Registered mode.
+	 *
 	 * @param $data
 	 */
 	public static function validate( $data ) {
@@ -164,32 +167,6 @@ class AppointmentController {
 			$errors['full_name'] = __( 'Please enter full name', 'bookit' );
 		}
 
-		if ( 'registered' == $settings['booking_type'] ) {
-
-			$exist_user = get_user_by( 'email', $data['email'] );
-			if ( ! $data['user_id'] && $exist_user && ! wp_check_password( $data['password'], $exist_user->data->user_pass, $exist_user->ID ) ) {
-				$errors['password'] = __( 'Wrong password', 'bookit' );
-			}
-
-			if ( ! $data['user_id'] ) {
-				if ( empty( $data['password'] ) ) {
-					$errors['password'] = __( 'Please enter a password', 'bookit' );
-				}
-
-				if ( false !== strpos( wp_unslash( $data['password'] ), '\\' ) ) {
-					$errors['password'] = __( "Passwords may not contain the character '\\'", 'bookit' );
-				}
-
-				if ( ! ( $exist_user instanceof \WP_User ) && ( ! empty( $data['password'] ) ) && $data['password'] != $data['password_confirmation'] ) {
-					$errors['password_confirmation'] = __( 'Please enter the same password in both password fields', 'bookit' );
-				}
-			}
-
-			if ( $data['user_id'] && ! is_user_logged_in() ) {
-				$errors['appointment'] = __( 'Authorization error', 'bookit' );
-			}
-		}
-
 		$price = Staff_Services::get_service_price_by_staff( $data['service_id'], $data['staff_id'] );
 		if ( (float) $data['clear_price'] !== (float) $price ) {
 			$errors['clear_price'] = __( 'Price is incorrect', 'bookit' );
@@ -206,6 +183,8 @@ class AppointmentController {
 
 	/**
 	 * Book Appointment
+	 *
+	 * @since 2.6.0 Require authentication and link the booking to the current user in Registered mode.
 	 */
 	public static function save() {
 		$send_no_cache_headers = apply_filters( 'rest_send_nocache_headers', is_user_logged_in() );
@@ -218,6 +197,22 @@ class AppointmentController {
 		check_ajax_referer( 'bookit_book_appointment', 'nonce' );
 
 		$data = CleanHelper::cleanData( $_POST, self::getCleanRules() );
+
+		$settings = SettingsController::get_settings();
+		if ( 'registered' == $settings['booking_type'] ) {
+			// Registered booking is tied to the authenticated visitor; identity is never taken from the request.
+			if ( ! is_user_logged_in() ) {
+				wp_send_json_error( array(
+					'login_required' => true,
+					'message'        => __( 'Please log in to complete your booking.', 'bookit' ),
+				) );
+			}
+
+			$current         = wp_get_current_user();
+			$data['user_id'] = $current->ID;
+			$data['email']   = $current->user_email;
+		}
+
 		self::validate( $data );
 
 		if ( empty( $data ) ) {

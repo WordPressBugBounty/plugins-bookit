@@ -38,6 +38,9 @@ export default {
   },
   methods: {
     isNextEnabled () {
+      if ( this.currentStep.key === 'auth' ) {
+        return false;
+      }
       if ( this.navigation.hasOwnProperty(this.currentStepIndex + 1) ) {
         return this.isArrayItemsInArray( this.navigation[this.currentStepIndex + 1].requiredFields, Object.keys( this.appointment ));
       }

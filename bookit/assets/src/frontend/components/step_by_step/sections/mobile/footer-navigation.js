@@ -1,7 +1,7 @@
 export default {
   name: 'navigation',
   template: `
-    <div v-if="!['category', 'service'].includes(currentStep.key  )" class="mobile">
+    <div v-if="!['category', 'service', 'auth'].includes(currentStep.key  )" class="mobile">
       <div :class="['calendar-footer', {'hidden': showDateTime}]">
         <!-- RESULT PART, AFTER APPOINTMENT CREATED -->
         <div class="navigation" v-if="currentStep.key == 'result'">

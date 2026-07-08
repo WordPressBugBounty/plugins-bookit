@@ -17,7 +17,7 @@ export default {
               <span class="error-tip" v-if="errors.phone">{{ errors.phone }}</span>
             </div>
           </div>
-          <div class="row">
+          <div v-if="settings.booking_type != 'registered'" class="row">
             <div class="detail-form">
               <label for="name">{{ translations.email }}</label>
               <input name="email" @change="changeData($event)" :class="{'error': errors.email}" v-model="appointment.email" type="email" :placeholder="translations.email" />
@@ -36,41 +36,13 @@ export default {
             <input name="phone" @change="changeData($event)" :class="{'error': errors.phone}" v-model="appointment.phone" type="text" :placeholder="translations.phone" />
             <span class="error-tip" v-if="errors.phone">{{ errors.phone }}</span>
           </div>
-          <div class="detail-form col-4">
+          <div v-if="settings.booking_type != 'registered'" class="detail-form col-4">
             <label for="name">{{ translations.email }}</label>
             <input name="email" @change="changeData($event)" :class="{'error': errors.email}" v-model="appointment.email" type="email" :placeholder="translations.email" />
             <span class="error-tip" v-if="errors.email">{{ errors.email }}</span>
           </div>
         </div>
-      
-      <div v-if="isMobile() && settings.booking_type == 'registered' && !this.appointment.user_id">
-        <div class="row">
-          <div class="detail-form">
-            <label for="name">{{ translations.password }}</label>
-            <input name="password" @change="changeData($event)" :class="{'error': errors.password}" v-model="appointment.password" type="password" :placeholder="translations.password" />
-            <span class="error-tip" v-if="errors.password">{{ errors.password }}</span>
-          </div>
-        </div>
-        <div class="row">
-          <div class="detail-form">
-            <label for="name">{{ translations.password_confirmation }}</label>
-            <input name="password_confirmation" @change="changeData($event)" :class="{'error': errors.password_confirmation}" v-model="appointment.password_confirmation" type="password" :placeholder="translations.password_confirmation" />
-            <span class="error-tip" v-if="errors.password_confirmation">{{ errors.password_confirmation }}</span>
-          </div>
-        </div>
-      </div>
-      <div v-else-if="settings.booking_type == 'registered' && !this.appointment.user_id" class="row">
-        <div class="detail-form col-4">
-          <label for="name">{{ translations.password }}</label>
-          <input name="password" @change="changeData($event)" :class="{'error': errors.password}" v-model="appointment.password" type="password" :placeholder="translations.password" />
-          <span class="error-tip" v-if="errors.password">{{ errors.password }}</span>
-        </div>
-        <div class="detail-form col-4" v-if="!existWpUserData.exist">
-          <label for="name">{{ translations.password_confirmation }}</label>
-          <input name="password_confirmation" @change="changeData($event)" :class="{'error': errors.password_confirmation}" v-model="appointment.password_confirmation" type="password" :placeholder="translations.password_confirmation" />
-          <span class="error-tip" v-if="errors.password_confirmation">{{ errors.password_confirmation }}</span>
-        </div>
-      </div>
+
       <div class="row">
         <div class="detail-form">
           <label for="name">{{ translations.service_note }}</label>
@@ -79,11 +51,8 @@ export default {
       </div>
     </div>
     `,
-  components: {
-  },
   data: () => ({
     translations: bookit_window.translations,
-    user_id: null,
   }),
   computed: {
     appointment: {
@@ -92,14 +61,6 @@ export default {
       },
       set( appointment ) {
         this.$store.commit('setAppointment', appointment);
-      }
-    },
-    existWpUserData: {
-      get() {
-          return this.$store.getters.getExistWpUserData;
-      },
-      set( data ) {
-          this.$store.commit('setExistWpUserData', data);
       }
     },
     errors() {
@@ -150,24 +111,6 @@ export default {
     }
   },
   methods: {
-      /**
-       * Check is user email already exist
-       * just for registered booking_type and
-       * if user not logged in
-       * @returns {Promise<void>}
-       */
-      async checkEmailBeforeBook( email, password ) {
-          let data = {
-              nonce: bookit_window.nonces.bookit_validate_wp_user_if_exist,
-              email: email,
-              password:password
-          };
-          let vm = this;
-          await this.axios.post(`${bookit_window.ajax_url}?action=bookit_validate_wp_user_if_exist`, this.generateFormData(data), this.getPostHeaders()).then((res) => {
-              vm.existWpUserData = res.data.data;
-          });
-    },
-
     changeData( event ) {
       delete this.errors[event.target.name];
       this.$store.commit('setErrors', this.errors);
@@ -175,11 +118,6 @@ export default {
       var appointment = Object.assign({}, this.appointment);
       appointment[event.target.name] = event.target.value;
       this.appointment               = appointment;
-
-      if ( this.settings.booking_type === 'registered' && ( ! this.appointment.user_id || this.appointment.user_id == undefined )
-          && ( 'email' === event.target.name || 'password' === event.target.name ) ) {
-          this.checkEmailBeforeBook( appointment.email, appointment.password );
-      }
     }
   },
 }

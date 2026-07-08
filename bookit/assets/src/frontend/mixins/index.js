@@ -3,11 +3,21 @@ export default {
     cookieExpirationTime () {
       return 24 * 60 * 60 * 1000; // 1 day
     },
-      existWpUserData() {
-        return this.$store.getters.getExistWpUserData;
-    },
   },
   methods: {
+    /** POST to a Bookit auth endpoint (login/register) with its nonce. **/
+    authRequest( action, data ) {
+      return this.axios.post(
+        `${bookit_window.ajax_url}?action=${action}`,
+        this.generateFormData({ ...data, nonce: bookit_window.nonces[action] }),
+        this.getPostHeaders()
+      ).then( res => res.data );
+    },
+    /** Apply an authenticated session: refresh nonces and store the user. **/
+    applyAuthSession( payload ) {
+      Object.assign( bookit_window.nonces, payload.nonces );
+      this.$store.commit( 'setUser', payload.user );
+    },
     isEqualDate(date1, date2) {
       return ( date1 && date2 && date1.format('D-M-Y') === date2.format('D-M-Y') );
     },
@@ -382,18 +392,6 @@ export default {
         errors.email = bookit_window.translations.invalid_email;
       }
 
-      if ( settings.booking_type === 'registered' && ! appointment.user_id ) {
-        if ( ! appointment.password || appointment.password.length === 0) {
-          errors.password = 'Please enter a password';
-        }
-
-        if ( appointment.password !== appointment.password_confirmation && ! this.existWpUserData.exist ) {
-          errors.password_confirmation = bookit_window.translations.confirmation_mismatched;
-        }
-        if ( this.existWpUserData.exist && ! this.existWpUserData.valid ) {
-            errors.password = bookit_window.translations.wrong_password;
-        }
-      }
       return errors;
     },
 

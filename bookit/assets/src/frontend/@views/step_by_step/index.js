@@ -10,6 +10,7 @@ import payment from '@components/step_by_step/sections/step-payment'
 import result from '@components/step_by_step/sections/book-result'
 import result_header from '@components/step_by_step/sections/result-header'
 import service from '@components/step_by_step/sections/step-service'
+import auth from '@components/step_by_step/sections/step-auth'
 
 export default {
     name: 'step_by_step',
@@ -28,7 +29,7 @@ export default {
                 <i class="left-icon"></i>
               </div>
               <navigation :isSmallParent="( !isTablet() &&  parseInt(minNormalWidth) > parseInt(parentBlockWidth) )" :isDisabled="isDisabled"></navigation>
-              <button v-if="!['result', 'category', 'service'].includes(currentStepKey) && !isMobile()" @click="nextStep" :class="['right', {'disabled': isDisabled}]" :disabled="isDisabled">
+              <button v-if="!['result', 'category', 'service', 'auth'].includes(currentStepKey) && !isMobile()" @click="nextStep" :class="['right', {'disabled': isDisabled}]" :disabled="isDisabled">
                 {{ translations.continue }}<i class="right-icon"></i>
               </button>
             </div>
@@ -59,6 +60,7 @@ export default {
     </div>
   `,
     components: {
+      auth,
       category,
       confirmation,
       footerNavigation,
@@ -105,6 +107,11 @@ export default {
 
       /** set data to store **/
       this.$store.commit('setStepNavigation', this.stepNavigation);
+
+      /** Registered booking must authenticate before any other step. **/
+      if ( this.navigation.length && this.navigation[0].key === 'auth' ) {
+        this.$store.commit('setCurrentStepKey', 'auth');
+      }
 
         /** set today by default at first **/
       if ( !this.appointment.date_timestamp ) {
@@ -377,6 +384,12 @@ export default {
             }
 
             this.$store.commit('setCurrentStepKey', 'result');
+          } else if (response.data && response.data.login_required) {
+            // Booking requires an authenticated session; return to the gate.
+            this.$store.commit('setAuthTab', 'login');
+            this.errors = { message: response.data.message };
+            this.$store.commit('setCurrentStepKey', 'auth');
+            return;
           } else if (response.data.errors && Object.keys(response.data.errors).length > 0){
             this.errors = response.data.errors;
           }
@@ -500,6 +513,11 @@ export default {
       },
       nextStep() {
         if ( this.isDisabled ) {
+          return;
+        }
+
+        /** The login gate **/
+        if ( this.currentStepKey === 'auth' ) {
           return;
         }
 

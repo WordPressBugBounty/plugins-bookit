@@ -63,7 +63,11 @@ class Customers extends DatabaseModel {
 		$wpdb->query( 'COMMIT' );
 	}
 
-	/** Save WP user if not exist **/
+	/**
+	 * Save WP user if not exist
+	 *
+	 * @since 2.6.0 Let WordPress hash the password on insert so the account can authenticate later.
+	 */
 	public static function save_or_get_wp_user( $data ) {
 		$is_exist_user = get_user_by( 'email', sanitize_email( $data['email'] ) );
 		if ( $is_exist_user ) {
@@ -72,7 +76,7 @@ class Customers extends DatabaseModel {
 
 		$user_data = array(
 			'user_login' => sanitize_user( $data['email'] ),
-			'user_pass'  => wp_hash_password( $data['password'] ),
+			'user_pass'  => $data['password'],
 			'first_name' => sanitize_text_field( $data['full_name'] ),
 			'last_name'  => '',
 			'user_email' => sanitize_email( $data['email'] ),
