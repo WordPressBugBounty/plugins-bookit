@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => 'stellarwp/bookit',
-        'pretty_version' => 'dev-main',
-        'version' => 'dev-main',
-        'reference' => '45ef9f2f41c7ca0c8464404e346079b63f20556a',
+        'pretty_version' => 'dev-release/M26.kingdra',
+        'version' => 'dev-release/M26.kingdra',
+        'reference' => 'eabd6a6a3d40c002bf69ad35aa75cdee2930f8ea',
         'type' => 'wordpress-plugin',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -47,9 +47,9 @@
             'dev_requirement' => false,
         ),
         'stellarwp/bookit' => array(
-            'pretty_version' => 'dev-main',
-            'version' => 'dev-main',
-            'reference' => '45ef9f2f41c7ca0c8464404e346079b63f20556a',
+            'pretty_version' => 'dev-release/M26.kingdra',
+            'version' => 'dev-release/M26.kingdra',
+            'reference' => 'eabd6a6a3d40c002bf69ad35aa75cdee2930f8ea',
             'type' => 'wordpress-plugin',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

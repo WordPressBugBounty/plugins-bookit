@@ -378,7 +378,7 @@ class Appointments extends DatabaseModel {
 	public static function day_appointments( $data ) {
 		global $wpdb;
 		$sql = sprintf(
-			'SELECT * FROM `%s` WHERE date_timestamp = %%d %s %s AND status NOT IN ( "%4$s", "%5$s" ) ORDER BY `%1$s`.`%6$s`',
+			'SELECT `id`, `staff_id`, `start_time`, `end_time`, `status` FROM `%s` WHERE date_timestamp = %%d %s %s AND status NOT IN ( "%4$s", "%5$s" ) ORDER BY `%1$s`.`%6$s`',
 			esc_sql( self::_table() ),
 			( ! empty( $data['service_id'] ) ) ? sprintf( "AND service_id = %d", intval( $data['service_id'] ) ) : '',
 			( ! empty( $data['staff_id'] ) ) ? sprintf( "AND staff_id = %d", intval( $data['staff_id'] ) ) : '',

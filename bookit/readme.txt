@@ -5,7 +5,7 @@ Tags: booking calendar, appointment booking, appointment calendar, booking, cale
 Requires at least: 6.3
 Requires PHP: 7.4
 Tested up to: 7.0
-Stable tag: 2.6.0
+Stable tag: 2.6.0.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -68,7 +68,11 @@ This section describes how to install the plugin and get it working.
 
 == Changelog ==
 
-= 2.6.0 2026-07-07 =
+= 2.6.0.1 2026-07-29 =
+
+* Security - Harden the day-appointments AJAX endpoint. [SVUL-L48]
+
+= 2.6.0 2026-07-08 =
 
 * Security - Require login or registration before completing a booking in Registered mode, and link the booking to the current user. [SVUL-31]
 * Security - Harden the booking and customer account AJAX endpoints. [SVUL-26]
