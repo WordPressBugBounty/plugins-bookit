@@ -185,6 +185,7 @@ class AppointmentController {
 	 * Book Appointment
 	 *
 	 * @since 2.6.0 Require authentication and link the booking to the current user in Registered mode.
+	 * @since 2.6.0.2 Derive the booking identity from the current session.
 	 */
 	public static function save() {
 		$send_no_cache_headers = apply_filters( 'rest_send_nocache_headers', is_user_logged_in() );
@@ -198,9 +199,12 @@ class AppointmentController {
 
 		$data = CleanHelper::cleanData( $_POST, self::getCleanRules() );
 
+		// Identify the booking from the current session.
+		$data['user_id'] = get_current_user_id();
+
 		$settings = SettingsController::get_settings();
 		if ( 'registered' == $settings['booking_type'] ) {
-			// Registered booking is tied to the authenticated visitor; identity is never taken from the request.
+			// Registered booking is tied to the authenticated visitor.
 			if ( ! is_user_logged_in() ) {
 				wp_send_json_error( array(
 					'login_required' => true,
@@ -208,9 +212,7 @@ class AppointmentController {
 				) );
 			}
 
-			$current         = wp_get_current_user();
-			$data['user_id'] = $current->ID;
-			$data['email']   = $current->user_email;
+			$data['email'] = wp_get_current_user()->user_email;
 		}
 
 		self::validate( $data );

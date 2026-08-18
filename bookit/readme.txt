@@ -5,7 +5,7 @@ Tags: booking calendar, appointment booking, appointment calendar, booking, cale
 Requires at least: 6.3
 Requires PHP: 7.4
 Tested up to: 7.0
-Stable tag: 2.6.0.1
+Stable tag: 2.6.0.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -67,6 +67,11 @@ This section describes how to install the plugin and get it working.
 
 
 == Changelog ==
+
+= 2.6.0.2 2026-08-17 =
+
+* Security - Harden the booking AJAX endpoint.
+* Fix - Reused an existing customer for repeat guest bookings instead of creating duplicate records.
 
 = 2.6.0.1 2026-07-29 =
 

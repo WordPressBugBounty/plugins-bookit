@@ -11,6 +11,8 @@ class CustomerController {
 	 * Appointment Customer
 	 *
 	 * @since 2.6.0 Resolve the customer from the authenticated session instead of request-supplied credentials.
+	 * @since 2.6.0.2 Resolve an existing customer from the session identity.
+	 * @since 2.6.0.2 Reuse an unlinked customer when the submitted contact fully matches.
 	 *
 	 * @param array $data
 	 *
@@ -24,8 +26,8 @@ class CustomerController {
 			$id       = $customer ? $customer->id : null;
 		}
 
-		if ( ! $id && ! empty( $data['email'] ) ) {
-			$customer = Customers::get( 'email', $data['email'] );
+		if ( ! $id ) {
+			$customer = self::match_guest_customer( $data );
 			$id       = $customer ? $customer->id : null;
 		}
 
@@ -167,6 +169,29 @@ class CustomerController {
 			),
 			'nonces' => Nonces::get_frontend_nonces(),
 		);
+	}
+
+	/**
+	 * Reuse an existing unlinked customer only when every submitted contact
+	 * field matches, so repeat guest bookings do not create duplicate records.
+	 *
+	 * @since 2.6.0.2
+	 *
+	 * @param array $data Cleaned booking request data.
+	 *
+	 * @return object|null
+	 */
+	private static function match_guest_customer( $data ) {
+		// Only anonymous bookings are matched; a session always resolves to its own customer.
+		if ( ! empty( $data['user_id'] ) ) {
+			return null;
+		}
+
+		if ( empty( $data['full_name'] ) || empty( $data['email'] ) || empty( $data['phone'] ) ) {
+			return null;
+		}
+
+		return Customers::get_by_contact( $data['full_name'], $data['email'], $data['phone'] );
 	}
 
 	/**

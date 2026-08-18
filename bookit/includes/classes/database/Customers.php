@@ -29,6 +29,31 @@ class Customers extends DatabaseModel {
 	}
 
 	/**
+	 * Get an unlinked customer whose submitted contact details all match.
+	 *
+	 * @since 2.6.0.2
+	 *
+	 * @param string $full_name Submitted customer full name.
+	 * @param string $email     Submitted customer email.
+	 * @param string $phone     Submitted customer phone.
+	 *
+	 * @return object|null
+	 */
+	public static function get_by_contact( $full_name, $email, $phone ) {
+		global $wpdb;
+
+		return $wpdb->get_row(
+			$wpdb->prepare(
+				'SELECT * FROM %i WHERE `full_name` = %s AND `email` = %s AND `phone` = %s AND ( `wp_user_id` IS NULL OR `wp_user_id` = 0 ) LIMIT 1',
+				self::_table(),
+				$full_name,
+				$email,
+				$phone
+			)
+		);
+	}
+
+	/**
 	 * Delete Customer
 	 * Set customer appointments status = delete
 	 * Update customer appointments notes
