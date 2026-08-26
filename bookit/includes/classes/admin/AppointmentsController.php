@@ -8,6 +8,7 @@ use Bookit\Classes\Database\Customers;
 use Bookit\Classes\Database\Payments;
 use Bookit\Classes\Database\Services;
 use Bookit\Classes\Database\Staff;
+use Bookit\Classes\Payments\PayPal;
 use Bookit\Classes\Template;
 use Bookit\Helpers\CleanHelper;
 use Bookit\Helpers\TimeSlotHelper;
@@ -256,6 +257,14 @@ class AppointmentsController extends DashboardController {
 			function ( &$value, $key ) {
 				// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_unserialize
 				$value['notes'] = unserialize( trim( $value['notes'] ) );
+
+				$value['payment_mismatch'] = ( 'paypal' === $value['payment_method'] )
+					? ( new PayPal() )->is_payment_mismatch( (object) array(
+						'total' => $value['total'],
+						'notes' => $value['payment_notes'],
+					) )
+					: false;
+				unset( $value['payment_notes'] );
 
 				$dateTimestamp                 = \DateTime::createFromFormat( 'U', $value['date_timestamp'], wp_timezone() );
 				$value['date_timestamp']       = $dateTimestamp->format( 'U' );

@@ -255,6 +255,7 @@ class Appointments extends DatabaseModel {
 		                `{$pt}`.type as payment_method,
 		                `{$pt}`.status as payment_status,
 		                `{$pt}`.total as total,
+		                `{$pt}`.notes as payment_notes,
 		                `{$ct}`.full_name as customer_name,
 		                `{$ct}`.email as customer_email,
 		                `{$ct}`.phone as customer_phone,

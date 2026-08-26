@@ -442,6 +442,89 @@ $black: #272727;
   }
 
 
+  .payment-mismatch {
+    position: relative;
+    display: inline-block;
+    margin-left: 4px;
+  }
+
+  .payment-mismatch-badge {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    line-height: 15px;
+    border: none;
+    border-radius: 50%;
+    background-color: #ffd500;
+    color: $base-color;
+    font-size: 11px;
+    font-weight: bold;
+    text-align: center;
+    padding: 0;
+    cursor: pointer;
+
+    &:hover,
+    &:focus {
+      background-color: darken(#ffd500, 8%);
+      outline: 2px solid rgba(0, 0, 0, 0.15);
+    }
+  }
+
+  .payment-mismatch-popover {
+    position: absolute;
+    // Flush against the badge (no top gap) so the mouse can travel from the
+    // badge straight into the popover on hover without crossing a dead zone
+    // that would fire mouseleave first. The visual gap comes from padding
+    // instead, which is part of the hit-testable box.
+    top: 100%;
+    left: 0;
+    z-index: 20;
+    width: 220px;
+    background-color: #fff;
+    border-radius: 6px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+    padding: 18px 12px 12px;
+    text-align: left;
+    white-space: normal;
+
+    p {
+      margin: 0 0 8px;
+      font-size: 12px;
+      line-height: 1.4;
+      color: $base-color;
+    }
+
+    a {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: bold;
+    }
+  }
+
+  // Marker used in the appointment modal: hover shows the explanation via the
+  // native title attribute, so no custom popover markup/JS is needed here.
+  .payment-mismatch-flag {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    line-height: 16px;
+    border-radius: 50%;
+    background-color: #ffd500;
+    color: $base-color;
+    font-size: 11px;
+    font-weight: bold;
+    text-align: center;
+    margin-left: 4px;
+    cursor: help;
+  }
+
+  .payment-mismatch-link {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    font-weight: bold;
+  }
+
   /* Info popup */
   .info-tip {
     background-color: #ffd50030;

@@ -3,7 +3,7 @@
         'name' => 'stellarwp/bookit',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => 'bb375697a975ef42bb03bfff7682ee8fcb6116fb',
+        'reference' => '6e4e4cbfa57180f0b6be935a295262818722b306',
         'type' => 'wordpress-plugin',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -49,7 +49,7 @@
         'stellarwp/bookit' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => 'bb375697a975ef42bb03bfff7682ee8fcb6116fb',
+            'reference' => '6e4e4cbfa57180f0b6be935a295262818722b306',
             'type' => 'wordpress-plugin',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

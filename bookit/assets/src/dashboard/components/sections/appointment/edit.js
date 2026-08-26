@@ -9,7 +9,7 @@ export default {
           <span @click.prevent="setEditView" v-if="viewType == 'appointmentView'" :class="['icon', {'edit': !editView}, {'view': editView} ]"></span>
           <span class="float-right accordion-icon" @click.self="switchAccordion('details', accordion.details)"></span>
         </a>
-        
+
         <div v-show="accordion.details" class="accordion-body">
           <div class="view" v-if="viewType == 'edit' || (viewType == 'appointmentView' && editView)">
             <div class="bookit-row normal">
@@ -111,7 +111,7 @@ export default {
           </div>
         </div>
       </div>
-    
+
       <div :class="['accordion', {active: accordion.customer}]">
       <a class="accordion-title" @click.self="switchAccordion('customer', accordion.customer)">
         {{ translations.customer }}
@@ -185,7 +185,7 @@ export default {
         </div>
       </div>
     </div>
-      
+
       <div :class="['accordion', {active: accordion.payment}]">
         <a class="accordion-title" @click.self="switchAccordion('payment', accordion.payment)">{{ translations.payment }}
           <span @click.prevent="setEditView" v-if="viewType == 'appointmentView'" :class="['icon', {'edit': !editView}, {'view': editView} ]"></span>
@@ -243,24 +243,26 @@ export default {
           </div>
           <div class="view" v-else-if="viewType == 'appointmentView' && !editView">
             <div class="view-row no-wrap">
-              <div class="field-info no-border sm col-3">
+              <div class="field-info no-border col-3">
                 <div class="payment-info customer">
                   {{ appointment.customer_name }}
                 </div>
               </div>
-              <div class="field-info no-border sm col-2">
+              <div class="field-info no-border col-2">
                 <div class="payment-info">
                   <span class="title">{{ translations.date }}:</span>
                   <span class="value">{{ selectedDate.format('DD/MM/YYYY') }}</span>
                 </div>
               </div>
-              <div class="field-info no-border sm col-2">
+              <div class="field-info no-border col-2 column">
                 <div class="payment-info">
                   <span class="title">{{ translations.status }}:</span>
                   <span class="value">{{ translations[appointment.payment_status] }}</span>
+                  <span v-if="appointment.payment_mismatch" class="payment-mismatch-flag" :title="mismatchTipText">?</span>
                 </div>
+                <a v-if="appointment.payment_mismatch" :href="paypalDashboardUrl" target="_blank" rel="noopener noreferrer" class="payment-mismatch-link">{{ translations.view_in_paypal }}</a>
               </div>
-              <div class="field-info no-border sm col-3">
+              <div class="field-info no-border col-3">
                 <div class="payment-info">
                   <span class="title upper">{{ translations.payment_method }}: </span>
                   <span class="value" v-if="translations[appointment.payment_method] !== undefined">
@@ -271,10 +273,10 @@ export default {
                   </span>
                 </div>
               </div>
-              <div class="field-info no-border sm col-2">
+              <div class="field-info no-border col-2">
                 <div class="payment-info">
                   <span class="title upper">{{ translations.total }}:</span>
-                  <span class="value">
+                  <span class="value text-nowrap">
                     <span v-if="settings.currency_position === 'left'">{{ settings.currency_symbol }}</span>
                     {{ appointment.price }}
                     <span v-if="settings.currency_position === 'right'">{{ settings.currency_symbol }}</span>
@@ -282,6 +284,7 @@ export default {
                 </div>
               </div>
             </div>
+
           </div>
         </div>
       </div>
@@ -425,6 +428,17 @@ export default {
     wpTimeFormat() {
       return this.getWPSettingsTimeFormat();
     },
+
+    // Translation strings come from esc_html__() on the PHP side (HTML-entity
+    // encoded, e.g. don&#039;t), which Vue text bindings don't decode.
+    mismatchTipText() {
+      return this.decodeHtmlEntities(this.translations.payment_mismatch_tip);
+    },
+    paypalDashboardUrl() {
+      return bookit_window.paypal_mode === 'live'
+        ? 'https://www.paypal.com/myaccount/transactions/'
+        : 'https://www.sandbox.paypal.com/myaccount/transactions/';
+    },
   },
   created() {
     this.editView = false;
@@ -450,6 +464,11 @@ export default {
     }
   },
   methods: {
+    decodeHtmlEntities(html) {
+      const el = document.createElement('textarea');
+      el.innerHTML = html;
+      return el.value;
+    },
     setEditView( ) {
       this.editView = !this.editView;
     },

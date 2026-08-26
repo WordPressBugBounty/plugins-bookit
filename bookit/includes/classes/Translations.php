@@ -225,6 +225,8 @@ class Translations {
 			'locally'                       => esc_html__( 'locally', 'bookit' ),
 			'free'                          => esc_html__( 'free', 'bookit' ),
 			'rejected'                      => esc_html__( 'rejected', 'bookit' ),
+			'payment_mismatch_tip'          => esc_html__( "Amount paid didn't match the booking price, verify or refund in PayPal before approving.", 'bookit' ),
+			'view_in_paypal'                => esc_html__( 'View in PayPal', 'bookit' ),
 			'activate_addon'                => esc_html__( 'Please activate addon', 'bookit' ),
 			'appointment_payment_notice'    => esc_html__( 'Please choose the customer, staff and service first', 'bookit' ),
 			'copy'                          => esc_html__( 'Copy', 'bookit' ),

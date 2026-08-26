@@ -35,6 +35,7 @@ class DashboardController {
 		wp_enqueue_script( 'bookit-dashboard-js', BOOKIT_URL . 'assets/dist/dashboard/js/app.js', array(), BOOKIT_VERSION );
 
 		$translations = array_merge( Translations::get_admin_translations(), Translations::get_addon_translations(), Translations::get_addons_page_translations() );
+		$settings     = SettingsController::get_settings();
 
 		$ajax_data = [
 			'services_url' => admin_url( 'admin.php?page=bookit-services' ),
@@ -49,6 +50,7 @@ class DashboardController {
 			'has_feedback' => self::has_feedback(),
 			'language'     => substr( get_bloginfo( 'language' ), 0, 2 ),
 			'timezones'    => self::get_timezones(),
+			'paypal_mode'  => $settings['payments']['paypal']['mode'] ?? 'live',
 		];
 
 		wp_localize_script( 'bookit-dashboard-js', 'bookit_window', $ajax_data );

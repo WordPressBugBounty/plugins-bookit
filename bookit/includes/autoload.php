@@ -22,6 +22,7 @@ require_once( BOOKIT_INCLUDES_PATH . '/helpers/CleanHelper.php' );
 require_once( BOOKIT_INCLUDES_PATH . '/helpers/FreemiusHelper.php' );
 require_once( BOOKIT_INCLUDES_PATH . '/helpers/TimeSlotHelper.php' );
 require_once( BOOKIT_INCLUDES_PATH . '/helpers/MailTemplateHelper.php' );
+require_once( BOOKIT_INCLUDES_PATH . '/helpers/SerializationHelper.php' );
 
 /* WP Admin Autoload */
 if ( is_admin() ) {

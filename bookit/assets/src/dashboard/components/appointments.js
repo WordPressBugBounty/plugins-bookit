@@ -1,6 +1,7 @@
 import Tabs from '@dashboard-partials/tabs';
 import Tab from '@dashboard-partials/tab';
 import AppointmentActions from '@dashboard-sections/appointment-actions';
+import PaymentColumn from '@dashboard-partials/payment-column';
 import appointment_form from '@dashboard-sections/appointment/form';
 import delete_form from '@dashboard-partials/delete-appointment-form';
 import documentation from '@dashboard-partials/documentation';
@@ -73,6 +74,7 @@ export default {
     tabs: Tabs,
     tab: Tab,
     AppointmentActions,
+    PaymentColumn,
     documentation,
     appointment_form,
     delete_form,
@@ -107,15 +109,7 @@ export default {
       { label: bookit_window.translations.price, field: 'price', headerAlign: 'left', sortable: false },
       { label: bookit_window.translations.date, headerAlign: 'left', field: 'date_timestamp_title', sortable: false,},
       { label: bookit_window.translations.time, headerAlign: 'left', field: 'time_title', sortable: false,},
-      { label: bookit_window.translations.payment, headerAlign: 'left', sortable: false, interpolate: true, class:'appointment-payment',
-        representedAs: ({payment_method, payment_status}) => {
-          if (payment_method) {
-            return `<b class="text-capitalize">${bookit_window.translations[payment_method] !== undefined ? bookit_window.translations[payment_method]: payment_method}</b><span class="status payment ${payment_status}-payment">${bookit_window.translations[payment_status]}</span>`;
-          } else {
-            return `<b class="text-capitalize">No payment</b>`;
-          }
-        }
-        },
+      { label: bookit_window.translations.payment, headerAlign: 'left', sortable: false, class:'appointment-payment', component: PaymentColumn },
       { label: bookit_window.translations.status, headerAlign: 'left', sortable: false, interpolate: true, class:'appointment-status',
         representedAs: ({status}) => `<div><span class="${status}-appointment"></span>${bookit_window.translations[status]}</div>` },
       { label: bookit_window.translations.actions, headerClass:'appointment-actions', component: AppointmentActions, type: 'appointment', headerAlign: 'left' }
