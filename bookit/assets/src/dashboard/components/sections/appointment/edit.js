@@ -258,9 +258,9 @@ export default {
                 <div class="payment-info">
                   <span class="title">{{ translations.status }}:</span>
                   <span class="value">{{ translations[appointment.payment_status] }}</span>
-                  <span v-if="appointment.payment_mismatch" class="payment-mismatch-flag" :title="mismatchTipText">?</span>
+                  <span v-if="appointment.payment_flag_reason" class="payment-mismatch-flag" :title="paymentFlagTipText">?</span>
                 </div>
-                <a v-if="appointment.payment_mismatch" :href="paypalDashboardUrl" target="_blank" rel="noopener noreferrer" class="payment-mismatch-link">{{ translations.view_in_paypal }}</a>
+                <a v-if="appointment.payment_flag_reason" :href="paymentFlagDashboardUrl" target="_blank" rel="noopener noreferrer" class="payment-mismatch-link">{{ paymentFlagLinkLabel }}</a>
               </div>
               <div class="field-info no-border col-3">
                 <div class="payment-info">
@@ -431,10 +431,20 @@ export default {
 
     // Translation strings come from esc_html__() on the PHP side (HTML-entity
     // encoded, e.g. don&#039;t), which Vue text bindings don't decode.
-    mismatchTipText() {
-      return this.decodeHtmlEntities(this.translations.payment_mismatch_tip);
+    paymentFlagTipText() {
+      const key = this.appointment.payment_flag_reason === 'reuse' ? 'payment_reuse_tip' : 'payment_mismatch_tip';
+      return this.decodeHtmlEntities(this.translations[key]);
     },
-    paypalDashboardUrl() {
+    paymentFlagLinkLabel() {
+      return this.appointment.payment_flag_reason === 'reuse' ? this.translations.view_in_stripe : this.translations.view_in_paypal;
+    },
+    paymentFlagDashboardUrl() {
+      if (this.appointment.payment_flag_reason === 'reuse') {
+        return bookit_window.stripe_connect_mode === 'live'
+          ? 'https://dashboard.stripe.com/payments'
+          : 'https://dashboard.stripe.com/test/payments';
+      }
+
       return bookit_window.paypal_mode === 'live'
         ? 'https://www.paypal.com/myaccount/transactions/'
         : 'https://www.sandbox.paypal.com/myaccount/transactions/';
@@ -464,13 +474,13 @@ export default {
     }
   },
   methods: {
+    setEditView( ) {
+      this.editView = !this.editView;
+    },
     decodeHtmlEntities(html) {
       const el = document.createElement('textarea');
       el.innerHTML = html;
       return el.value;
-    },
-    setEditView( ) {
-      this.editView = !this.editView;
     },
     /** accordion methods **/
     errorsInAccordion() {

@@ -9,6 +9,7 @@ use Bookit\Classes\Database\Payments;
 use Bookit\Classes\Database\Services;
 use Bookit\Classes\Database\Staff;
 use Bookit\Classes\Payments\PayPal;
+use Bookit\Gateways\StripeConnect\Merchant;
 use Bookit\Classes\Template;
 use Bookit\Helpers\CleanHelper;
 use Bookit\Helpers\TimeSlotHelper;
@@ -258,12 +259,17 @@ class AppointmentsController extends DashboardController {
 				// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_unserialize
 				$value['notes'] = unserialize( trim( $value['notes'] ) );
 
-				$value['payment_mismatch'] = ( 'paypal' === $value['payment_method'] )
-					? ( new PayPal() )->is_payment_mismatch( (object) array(
-						'total' => $value['total'],
-						'notes' => $value['payment_notes'],
-					) )
-					: false;
+				$payment = (object) array(
+					'total' => $value['total'],
+					'notes' => $value['payment_notes'],
+				);
+
+				$value['payment_flag_reason'] = null;
+				if ( 'paypal' === $value['payment_method'] && ( new PayPal() )->is_payment_mismatch( $payment ) ) {
+					$value['payment_flag_reason'] = 'mismatch';
+				} elseif ( 'stripeConnect' === $value['payment_method'] && ( new Merchant() )->is_payment_reuse( $payment ) ) {
+					$value['payment_flag_reason'] = 'reuse';
+				}
 				unset( $value['payment_notes'] );
 
 				$dateTimestamp                 = \DateTime::createFromFormat( 'U', $value['date_timestamp'], wp_timezone() );

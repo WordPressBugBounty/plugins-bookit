@@ -29,6 +29,7 @@ abstract class BookitUpdates {
 		'2.2.0' => array( 'add_calendar_view_type_to_settings' ),
 		'2.2.1' => array( 'add_admin_notification_transient' ),
 		'2.2.5' => array( 'update_payment_methods_enum' ),
+		'2.2.6' => array( 'add_payment_transaction_claim_schema' ),
 	);
 
 	/**

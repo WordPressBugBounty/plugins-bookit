@@ -8,7 +8,7 @@
  * License: GNU General Public License v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: bookit
- * Version: 2.6.0.3
+ * Version: 2.6.0.4
  * Requires at least: 6.3
  * Requires PHP:      7.4
  */
@@ -17,8 +17,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'BOOKIT_VERSION', '2.6.0.3' );
-define( 'BOOKIT_DB_VERSION', '2.2.5' );
+define( 'BOOKIT_VERSION', '2.6.0.4' );
+define( 'BOOKIT_DB_VERSION', '2.2.6' );
 define( 'BOOKIT_FILE', __FILE__ );
 define( 'BOOKIT_PATH', dirname( BOOKIT_FILE ) );
 define( 'BOOKIT_INCLUDES_PATH', BOOKIT_PATH . '/includes/' );

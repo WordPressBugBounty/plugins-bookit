@@ -286,4 +286,13 @@ abstract class BookitUpdateCallbacks {
 	public static function update_payment_methods_enum() {
 		Payments::update_payment_methods_enum();
 	}
+
+	/**
+	 * Add a unique index on the payments `transaction` column.
+	 *
+	 * @since 2.6.0.4
+	 */
+	public static function add_payment_transaction_claim_schema() {
+		Payments::add_payment_transaction_claim_schema();
+	}
 }

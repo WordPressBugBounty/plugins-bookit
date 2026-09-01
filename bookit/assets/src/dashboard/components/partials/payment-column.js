@@ -6,7 +6,7 @@ export default {
       <template v-if="row.payment_method">
         <b class="text-capitalize">{{ methodLabel }}</b>
         <span class="status payment" :class="row.payment_status + '-payment'">{{ translations[row.payment_status] }}</span>
-        <payment-mismatch-indicator v-if="row.payment_mismatch"></payment-mismatch-indicator>
+        <payment-mismatch-indicator v-if="row.payment_flag_reason" :reason="row.payment_flag_reason"></payment-mismatch-indicator>
       </template>
       <b v-else class="text-capitalize">No payment</b>
     </div>

@@ -8,6 +8,7 @@ use Bookit\Classes\Vendor\Payments;
 use Bookit\Classes\Database\Payments as PaymentDb;
 use Bookit\Classes\Admin\SettingsController;
 use Bookit\Classes\Database\Staff_Services;
+use Bookit\Helpers\SerializationHelper;
 
 /**
  * Class Merchant
@@ -435,6 +436,7 @@ class Merchant extends Abstract_Merchant {
 	 * Check Stripe Payment
 	 *
 	 * @since 2.5.0
+	 * @since 2.6.0.4 Improved payment verification.
 	 *
 	 * @param string $token   Stripe payment token.
 	 * @param float  $total   Total amount to be charged.
@@ -457,23 +459,167 @@ class Merchant extends Abstract_Merchant {
 			return;
 		}
 
+		if ( $this->matches_expected_payment( $request, $amount, $currency, $invoice ) ) {
+			$data = [
+				'updated_at'  => wp_date( 'Y-m-d H:i:s' ),
+				'status'      => PaymentDb::$completeStatus,
+				'paid_at'     => wp_date( 'Y-m-d H:i:s' ),
+				'transaction' => $request['id'],
+				'notes'       => serialize( $request ),
+			];
+
+			/**
+			 * Fires immediately before a payment row is written, once its status
+			 * and notes have already been determined.
+			 *
+			 * @since 2.6.0.4
+			 *
+			 * @param int   $invoice Appointment id.
+			 * @param array $data    Row data about to be written.
+			 */
+			do_action( 'bookit_before_payment_write', $invoice, $data );
+
+			if ( PaymentDb::claim_transaction( $invoice, $request['id'], $data ) ) {
+				do_action( 'bookit_payment_complete', $invoice );
+
+				return;
+			}
+
+			$this->reject_payment( $invoice, $request, true );
+
+			return;
+		}
+
+		$this->reject_payment( $invoice, $request );
+	}
+
+	/**
+	 * Record a payment as rejected.
+	 *
+	 * @since 2.6.0.4
+	 *
+	 * @param int   $invoice   Appointment id.
+	 * @param array $request   Decoded PaymentIntent response from Stripe.
+	 * @param bool  $claimed   Whether a claim was attempted and lost, as opposed
+	 *                         to the payment failing verification outright.
+	 */
+	private function reject_payment( $invoice, $request, $claimed = false ) {
+		if ( $this->is_transaction_used_elsewhere( $request['id'], $invoice ) ) {
+			$reason = 'duplicate_transaction';
+		} elseif ( $claimed ) {
+			// The claim was lost to something other than a competing payment,
+			// so the row must not read as a gateway replay to an operator.
+			$reason = 'write_failed';
+		} else {
+			$reason = '';
+		}
+
 		$data = [
-			'transaction' => $request['id'],
-			'notes'       => serialize( $request ),
-			'updated_at'  => wp_date( 'Y-m-d H:i:s' ),
+			'updated_at' => wp_date( 'Y-m-d H:i:s' ),
+			'status'     => PaymentDb::$rejectedStatus,
+			'paid_at'    => null,
+			'notes'      => serialize(
+				$reason
+					? [
+						'reason'   => $reason,
+						'response' => $request,
+					]
+					: $request
+			),
 		];
 
-		if ( ! empty( $request['status'] ) && ! empty( $request['amount'] ) && 'succeeded' === $request['status'] && $request['amount'] == $amount ) {
-			$data['status']  = PaymentDb::$completeStatus;
-			$data['paid_at'] = wp_date( 'Y-m-d H:i:s' );
-
-			PaymentDb::update( $data, [ 'appointment_id' => $invoice ] );
-
-			do_action( 'bookit_payment_complete', $invoice );
-		} else {
-			$data['status'] = PaymentDb::$rejectedStatus;
-			PaymentDb::update( $data, [ 'appointment_id' => $invoice ] );
+		if ( ! $claimed ) {
+			/**
+			 * Fires immediately before a payment row is written, once its status
+			 * and notes have already been determined.
+			 *
+			 * @since 2.6.0.4
+			 *
+			 * @param int   $invoice Appointment id.
+			 * @param array $data    Row data about to be written.
+			 */
+			do_action( 'bookit_before_payment_write', $invoice, $data );
 		}
+
+		// Keep an unexpected database error out of the AJAX response when
+		// WP_DEBUG is enabled: this path is reachable with attacker input.
+		global $wpdb;
+		$had_errors_shown = $wpdb->hide_errors();
+
+		PaymentDb::update( $data, [ 'appointment_id' => $invoice ] );
+
+		if ( $had_errors_shown ) {
+			$wpdb->show_errors();
+		}
+	}
+
+	/**
+	 * Whether a rejected payment was rejected due to a duplicate transaction
+	 * reference, as opposed to any other rejection reason.
+	 *
+	 * @since 2.6.0.4
+	 *
+	 * @param object $payment Row from wp_bookit_payments (needs ->notes).
+	 *
+	 * @return bool
+	 */
+	public function is_payment_reuse( $payment ) {
+		if ( empty( $payment->notes ) ) {
+			return false;
+		}
+
+		$notes = SerializationHelper::safe_unserialize( trim( $payment->notes ) );
+		if ( false === $notes ) {
+			return false;
+		}
+
+		return isset( $notes['reason'] ) && 'duplicate_transaction' === $notes['reason'];
+	}
+
+	/**
+	 * Determine whether a PaymentIntent response represents a valid,
+	 * unused payment for this request.
+	 *
+	 * @since 2.6.0.4
+	 *
+	 * @param array  $request  Decoded PaymentIntent response from Stripe.
+	 * @param int    $amount   Expected amount, in the smallest currency unit.
+	 * @param string $currency Expected currency code.
+	 * @param int    $invoice  Appointment ID this check is being performed for.
+	 *
+	 * @return bool
+	 */
+	private function matches_expected_payment( $request, $amount, $currency, $invoice ) {
+		$status_ok   = ! empty( $request['status'] ) && 'succeeded' === $request['status'];
+		$amount_ok   = ! empty( $request['amount'] ) && $request['amount'] == $amount;
+		$currency_ok = ! empty( $request['currency'] ) && strtoupper( $request['currency'] ) === strtoupper( (string) $currency );
+
+		if ( ! ( $status_ok && $amount_ok && $currency_ok ) ) {
+			return false;
+		}
+
+		return ! $this->is_transaction_used_elsewhere( $request['id'], $invoice );
+	}
+
+	/**
+	 * Whether a transaction id is already completed against a different
+	 * appointment's payment.
+	 *
+	 * @since 2.6.0.4
+	 *
+	 * @param string $transaction_id Gateway transaction id to look up.
+	 * @param int    $invoice        Appointment ID this check is being performed for.
+	 *
+	 * @return bool
+	 */
+	private function is_transaction_used_elsewhere( $transaction_id, $invoice ) {
+		$used_txn = PaymentDb::get_completed_by_transaction( $transaction_id );
+
+		if ( empty( $used_txn ) ) {
+			return false;
+		}
+
+		return (int) $used_txn->appointment_id !== (int) $invoice;
 	}
 
 	/**

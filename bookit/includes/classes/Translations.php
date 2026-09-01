@@ -227,6 +227,8 @@ class Translations {
 			'rejected'                      => esc_html__( 'rejected', 'bookit' ),
 			'payment_mismatch_tip'          => esc_html__( "Amount paid didn't match the booking price, verify or refund in PayPal before approving.", 'bookit' ),
 			'view_in_paypal'                => esc_html__( 'View in PayPal', 'bookit' ),
+			'payment_reuse_tip'             => esc_html__( 'This payment reused a transaction already applied to another booking, verify in Stripe before approving.', 'bookit' ),
+			'view_in_stripe'                => esc_html__( 'View in Stripe', 'bookit' ),
 			'activate_addon'                => esc_html__( 'Please activate addon', 'bookit' ),
 			'appointment_payment_notice'    => esc_html__( 'Please choose the customer, staff and service first', 'bookit' ),
 			'copy'                          => esc_html__( 'Copy', 'bookit' ),

@@ -10,10 +10,17 @@ export default {
       >?</button>
       <div v-if="visible" class="payment-mismatch-popover" role="dialog">
         <p>{{ tipText }}</p>
-        <a :href="paypalDashboardUrl" target="_blank" rel="noopener noreferrer">{{ translations.view_in_paypal }}</a>
+        <a :href="dashboardUrl" target="_blank" rel="noopener noreferrer">{{ linkLabel }}</a>
       </div>
     </span>
   `,
+  props: {
+    // 'mismatch' or 'reuse' — which review indicator copy/link to show.
+    reason: {
+      type: String,
+      required: true
+    }
+  },
   data: () => ({
     translations: bookit_window.translations,
     open: false,
@@ -28,9 +35,19 @@ export default {
     // encoded, e.g. don&#039;t), which is correct for the raw-HTML contexts
     // elsewhere in this app but renders literally in Vue text bindings.
     tipText() {
-      return this.decodeHtmlEntities(this.translations.payment_mismatch_tip);
+      const key = this.reason === 'reuse' ? 'payment_reuse_tip' : 'payment_mismatch_tip';
+      return this.decodeHtmlEntities(this.translations[key]);
     },
-    paypalDashboardUrl() {
+    linkLabel() {
+      return this.reason === 'reuse' ? this.translations.view_in_stripe : this.translations.view_in_paypal;
+    },
+    dashboardUrl() {
+      if (this.reason === 'reuse') {
+        return bookit_window.stripe_connect_mode === 'live'
+          ? 'https://dashboard.stripe.com/payments'
+          : 'https://dashboard.stripe.com/test/payments';
+      }
+
       return bookit_window.paypal_mode === 'live'
         ? 'https://www.paypal.com/myaccount/transactions/'
         : 'https://www.sandbox.paypal.com/myaccount/transactions/';

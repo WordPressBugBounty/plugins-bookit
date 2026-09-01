@@ -6,6 +6,7 @@ use Bookit\Classes\Base\User;
 use Bookit\Classes\Nonces;
 use Bookit\Classes\Template;
 use Bookit\Classes\Translations;
+use Bookit\Gateways\StripeConnect\Merchant;
 use Bookit\Helpers\FreemiusHelper;
 use DateTimeZone;
 
@@ -38,19 +39,20 @@ class DashboardController {
 		$settings     = SettingsController::get_settings();
 
 		$ajax_data = [
-			'services_url' => admin_url( 'admin.php?page=bookit-services' ),
-			'calendar_url' => admin_url( 'admin.php?page=bookit' ),
-			'site_url'     => get_bloginfo( 'url' ),
-			'plugin_url'   => BOOKIT_URL,
-			'ajax_url'     => admin_url( 'admin-ajax.php' ),
-			'translations' => $translations,
-			'nonces'       => Nonces::get_admin_nonces(),
-			'bookit_user'  => self::bookitUser(),
-			'pro_disabled' => bookit_pro_features_disabled(), //todo remove
-			'has_feedback' => self::has_feedback(),
-			'language'     => substr( get_bloginfo( 'language' ), 0, 2 ),
-			'timezones'    => self::get_timezones(),
-			'paypal_mode'  => $settings['payments']['paypal']['mode'] ?? 'live',
+			'services_url'        => admin_url( 'admin.php?page=bookit-services' ),
+			'calendar_url'        => admin_url( 'admin.php?page=bookit' ),
+			'site_url'            => get_bloginfo( 'url' ),
+			'plugin_url'          => BOOKIT_URL,
+			'ajax_url'            => admin_url( 'admin-ajax.php' ),
+			'translations'        => $translations,
+			'nonces'              => Nonces::get_admin_nonces(),
+			'bookit_user'         => self::bookitUser(),
+			'pro_disabled'        => bookit_pro_features_disabled(), //todo remove
+			'has_feedback'        => self::has_feedback(),
+			'language'            => substr( get_bloginfo( 'language' ), 0, 2 ),
+			'timezones'           => self::get_timezones(),
+			'paypal_mode'         => $settings['payments']['paypal']['mode'] ?? 'live',
+			'stripe_connect_mode' => ( new Merchant() )->get_mode(),
 		];
 
 		wp_localize_script( 'bookit-dashboard-js', 'bookit_window', $ajax_data );
