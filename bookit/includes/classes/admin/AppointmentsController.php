@@ -346,6 +346,10 @@ class AppointmentsController extends DashboardController {
 	public static function get_calendar_appointments() {
 		check_ajax_referer( 'bookit_get_calendar_appointments', 'nonce' );
 
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return false;
+		}
+
 		$data = CleanHelper::cleanData( $_POST, self::getCleanRules() );
 
 		if ( empty( $data ) || ! key_exists( 'start_timestamp', $data ) || ! key_exists( 'end_timestamp', $data ) ) {
@@ -663,6 +667,10 @@ class AppointmentsController extends DashboardController {
 	 */
 	public static function delete() {
 		check_ajax_referer( 'bookit_delete_item', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return false;
+		}
 
 		$data = CleanHelper::cleanData( $_POST, self::getCleanRules() );
 
