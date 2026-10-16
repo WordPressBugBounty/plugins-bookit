@@ -199,6 +199,9 @@ class AppointmentController {
 
 		$data = CleanHelper::cleanData( $_POST, self::getCleanRules() );
 
+		// Payment status is server-owned; drop any client value so a public booking can't be stored as paid.
+		unset( $data['payment_status'] );
+
 		// Identify the booking from the current session.
 		$data['user_id'] = get_current_user_id();
 

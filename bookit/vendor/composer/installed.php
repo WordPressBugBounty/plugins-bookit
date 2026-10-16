@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => 'stellarwp/bookit',
-        'pretty_version' => 'dev-release/M26.octillery',
-        'version' => 'dev-release/M26.octillery',
-        'reference' => 'de696f2e669f22e53e5a5762d74f90d0fcae987d',
+        'pretty_version' => 'dev-release/M26.quagsire',
+        'version' => 'dev-release/M26.quagsire',
+        'reference' => 'f1f5d3f0fe167de11d56973eec2a2719f98959f6',
         'type' => 'wordpress-plugin',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -47,9 +47,9 @@
             'dev_requirement' => false,
         ),
         'stellarwp/bookit' => array(
-            'pretty_version' => 'dev-release/M26.octillery',
-            'version' => 'dev-release/M26.octillery',
-            'reference' => 'de696f2e669f22e53e5a5762d74f90d0fcae987d',
+            'pretty_version' => 'dev-release/M26.quagsire',
+            'version' => 'dev-release/M26.quagsire',
+            'reference' => 'f1f5d3f0fe167de11d56973eec2a2719f98959f6',
             'type' => 'wordpress-plugin',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
