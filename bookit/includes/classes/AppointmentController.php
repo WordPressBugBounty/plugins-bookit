@@ -39,6 +39,9 @@ class AppointmentController {
 			'end_timestamp'   => array( 'type' => 'intval' ),
 			'now_timestamp'   => array( 'type' => 'intval' ),
 			'today_timestamp' => array( 'type' => 'intval' ),
+			'date_timestamp'  => array( 'type' => 'intval' ),
+			'start_time'      => array( 'type' => 'intval' ),
+			'end_time'        => array( 'type' => 'intval' ),
 			'email'           => array(
 				'type'     => 'strval',
 				'function' => array(
@@ -110,8 +113,11 @@ class AppointmentController {
 	 * Validation
 	 *
 	 * @since 2.6.0 Booking identity is derived from the authenticated session in Registered mode.
+	 * @since 2.6.0.7 Refuse a staff member who does not offer the chosen service or a disabled payment method, and return the price.
 	 *
 	 * @param $data
+	 *
+	 * @return string|null The price of the validated staff/service pair, or null when the pair is not linked.
 	 */
 	public static function validate( $data ) {
 		$errors   = array();
@@ -168,17 +174,21 @@ class AppointmentController {
 		}
 
 		$price = Staff_Services::get_service_price_by_staff( $data['service_id'], $data['staff_id'] );
-		if ( (float) $data['clear_price'] !== (float) $price ) {
+		if ( null === $price ) {
+			$errors['staff_service'] = __( 'Please choose correct staff and service', 'bookit' );
+		} elseif ( (float) $data['clear_price'] !== (float) $price ) {
 			$errors['clear_price'] = __( 'Price is incorrect', 'bookit' );
 		}
 
-		if ( (float) $data['clear_price'] > 0 && ! array_key_exists( $data['payment_method'], $settings['payments'] ) ) {
+		if ( (float) $price > 0 && empty( $settings['payments'][ $data['payment_method'] ]['enabled'] ) ) {
 			$errors['payment_method'] = __( 'Please choose correct payment method', 'bookit' );
 		}
 
 		if ( count( $errors ) > 0 ) {
 			wp_send_json_error( array( 'errors' => $errors ) );
 		}
+
+		return $price;
 	}
 
 	/**
@@ -218,7 +228,11 @@ class AppointmentController {
 			$data['email'] = wp_get_current_user()->user_email;
 		}
 
-		self::validate( $data );
+		// The price is server-owned; never store the submitted value.
+		$data['clear_price'] = self::validate( $data );
+		if ( null === $data['clear_price'] ) {
+			return;
+		}
 
 		if ( empty( $data ) ) {
 			wp_send_json_error( array( 'message' => __( 'Error occurred!', 'bookit' ) ) );

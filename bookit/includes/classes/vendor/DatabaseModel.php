@@ -102,26 +102,13 @@ abstract class DatabaseModel {
 	public static function insert( $data ) {
 		global $wpdb;
 
-		add_filter( 'query', array( self::class, 'wp_db_null_value' ) );
-
 		if ( isset( $data['nonce'] ) ) {
 			unset( $data['nonce'] );
 		}
 
-		$data = array_map(
-			function( $item ) {
-				$item = (string) $item; // Cast to string to prevent null values.
-				if ( trim( $item, ' \'"' ) ) {
-					return trim( $item );
-				}
-				return null;
-			},
-			$data
-		);
+		$data = self::prepare_values_for_storage( $data );
 
 		$wpdb->insert( self::_table(), $data );
-
-		remove_filter( 'query', array( self::class, 'wp_db_null_value' ) );
 	}
 
 	/**
@@ -132,26 +119,39 @@ abstract class DatabaseModel {
 	public static function update( $data, $where ) {
 		global $wpdb;
 
-		add_filter( 'query', array( self::class, 'wp_db_null_value' ) );
-
 		if ( isset( $data['nonce'] ) ) {
 			unset( $data['nonce'] );
 		}
 
-		$data = array_map(
+		$data = self::prepare_values_for_storage( $data );
+
+		$wpdb->update( self::_table(), $data, $where );
+	}
+
+	/**
+	 * Normalize a column=>value map before it is handed to $wpdb.
+	 *
+	 * Trims surrounding whitespace, and turns an empty value or the
+	 * "NULL" placeholder the admin screens post back into a real PHP null, so
+	 * $wpdb stores SQL NULL for it. $wpdb escapes every other value through
+	 * prepare(), so the statement is never rewritten after escaping.
+	 *
+	 * @param array $data Column => value map.
+	 *
+	 * @return array Normalized column => value map.
+	 */
+	private static function prepare_values_for_storage( $data ) {
+		return array_map(
 			function( $item ) {
-				$item = (string) $item; // Cast to string to prevent null values.
-				if ( trim( $item, ' \'"' ) ) {
-					return trim( $item );
+				$item    = (string) $item;
+				$trimmed = trim( $item );
+				if ( '' === trim( $item, ' \'"' ) || 0 === strcasecmp( $trimmed, 'NULL' ) ) {
+					return null;
 				}
-				return null;
+				return $trimmed;
 			},
 			$data
 		);
-
-		$wpdb->update( self::_table(), $data, $where );
-
-		remove_filter( 'query', array( self::class, 'wp_db_null_value' ) );
 	}
 
 	/**
@@ -187,13 +187,21 @@ abstract class DatabaseModel {
 	}
 
 	/**
-	 * Replace the 'NULL' string with NULL
+	 * Formerly rewrote 'NULL' strings in a statement; now returns it unchanged.
 	 *
-	 * @param  string $query
-	 * @return string $query
+	 * Rewriting a statement after $wpdb has escaped it is unsafe, so the model no
+	 * longer does it. Pass a PHP null value to store SQL NULL instead.
+	 *
+	 * @deprecated 2.6.0.7 Pass PHP null values to insert() and update() instead.
+	 *
+	 * @param string $query SQL statement.
+	 *
+	 * @return string The statement, unchanged.
 	 */
 	public static function wp_db_null_value( $query ) {
-		return str_ireplace( "'NULL'", 'NULL', $query );
+		_deprecated_function( __METHOD__, '2.6.0.7' );
+
+		return $query;
 	}
 
 	/**

@@ -43,7 +43,7 @@ class Staff_Services extends DatabaseModel {
 						ORDER BY `%1$s`.staff_id',
 				esc_sql( self::_table() ), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 				esc_sql( Services::_table() ), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-				esc_sql( implode( ',', $staffIds ) ) // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				implode( ',', array_map( 'absint', $staffIds ) ) // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Integers only.
 			),
 			ARRAY_A
 		);
