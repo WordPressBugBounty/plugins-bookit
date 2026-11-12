@@ -6,6 +6,36 @@
 use Bookit\Vendor\StellarWP\Arrays\Arr;
 
 /**
+ * Encode a value for a Vue `v-bind` (`:prop`) attribute.
+ *
+ * The admin and front-end apps mount Vue's full build, which compiles every
+ * `:prop` value as a JavaScript expression. `esc_attr()` alone is not enough:
+ * it leaves existing HTML character references (e.g. `&#34;`) untouched, so the
+ * browser decodes them back into literal quotes that close the JSON string and
+ * hand the remainder to Vue's expression compiler. The `JSON_HEX_*` flags emit
+ * those delimiters as `\uXXXX` escapes, keeping the value inside the string
+ * literal.
+ *
+ * @since 2.6.0.8
+ *
+ * @param mixed $value Value to serialise into the attribute.
+ *
+ * @return string Attribute-ready, escaped JSON. Empty string when encoding fails.
+ */
+function bookit_vue_prop( $value ) {
+	$json = wp_json_encode(
+		$value,
+		JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_HEX_APOS
+	);
+
+	if ( false === $json ) {
+		return '';
+	}
+
+	return esc_attr( $json );
+}
+
+/**
  * Generate Price
  * @param $price
  * @return string
