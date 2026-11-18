@@ -9,6 +9,7 @@ use Bookit\Classes\Database\Staff;
 use Bookit\Classes\Admin\SettingsController;
 use Bookit\Helpers\AddonHelper;
 use Bookit\Helpers\TimeSlotHelper;
+use Bookit\Vendor\StellarWP\Arrays\Arr;
 
 class BookitController {
 
@@ -121,7 +122,7 @@ class BookitController {
 			'categories'  => $categories,
 			'services'    => $services,
 			'staff'       => $staff,
-			'settings'    => $settings,
+			'settings'    => self::get_frontend_settings( $settings ),
 			'user'        => $user,
 			'language'    => $language,
 			'slot_list'   => $time_slot_list,
@@ -256,6 +257,50 @@ class BookitController {
 		) );
 
 		return $step_navigation;
+	}
+
+	/**
+	 * Reduce the settings to the keys the public booking app reads.
+	 *
+	 * The settings are printed into the page source for every visitor, while the stored option also holds
+	 * server-side credentials (e.g. the legacy Stripe secret key) and admin-only configuration.
+	 *
+	 * @since TBD
+	 *
+	 * @param array<string,mixed> $settings The filtered settings, including the runtime keys added by render_calendar().
+	 *
+	 * @return array<string,mixed> The allowlisted settings, with each payment gateway reduced to its public keys.
+	 */
+	private static function get_frontend_settings( array $settings ): array {
+		$frontend_settings = Arr::only(
+			$settings,
+			[
+				'booking_type',
+				'calendar_view',
+				'currency_position',
+				'currency_symbol',
+				'date_format',
+				'decimals_number',
+				'decimals_separator',
+				'hide_from_for_equal_service_price',
+				'hide_header_titles',
+				'payment_active',
+				'pro_active',
+				'thousands_separator',
+				'time_format',
+			]
+		);
+
+		$frontend_settings['payments'] = [];
+
+		foreach ( (array) ( $settings['payments'] ?? [] ) as $gateway => $gateway_settings ) {
+			$frontend_settings['payments'][ $gateway ] = Arr::only(
+				(array) $gateway_settings,
+				[ 'custom_icon', 'custom_title', 'enabled', 'publish_key' ]
+			);
+		}
+
+		return $frontend_settings;
 	}
 
 	/**

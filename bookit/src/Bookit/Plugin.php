@@ -29,7 +29,7 @@ class Plugin {
 	 *
 	 * @var string
 	 */
-	public const VERSION = '2.6.0.8';
+	public const VERSION = '2.6.0.9';
 
 	/**
 	 * Stores the base slug for the plugin.
