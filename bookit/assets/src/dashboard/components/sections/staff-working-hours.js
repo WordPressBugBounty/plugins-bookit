@@ -17,7 +17,7 @@ export default {
         <span v-show="!dayOff">
           &nbsp; <b>{{ translations.to }}</b> &nbsp;
           <select @change="handleChangeWorkingHours($event)" name="end_time" class="width-auto">
-            <option v-for="time in getTimeList(toHour, toMinutes)" :value="time.value" :selected="item.end_time == time.value">
+            <option v-for="time in getEndTimeList()" :value="time.value" :selected="item.end_time == time.value">
               {{ time.label }}
             </option>
           </select>
@@ -49,6 +49,14 @@ export default {
     this.moment.updateLocale( bookit_window.language, {});
   },
   methods: {
+    getEndTimeList() {
+      let times = this.getTimeList( this.toHour, this.toMinutes );
+      // A working day can end at 12:00 am, which runs until midnight.
+      if ( ! times.some( time => time.value === '00:00:00' ) ) {
+        times.push( { value: '00:00:00', label: this.moment( { hour: 0, minute: 0 } ).format( 'h:mm a' ) } );
+      }
+      return times;
+    },
     handleChangeWorkingHours( event ) {
       var value = event.target.value;
       var start = this.item.start_time;

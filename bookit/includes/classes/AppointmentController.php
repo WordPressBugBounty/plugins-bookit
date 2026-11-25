@@ -7,7 +7,9 @@ use Bookit\Classes\Base\Plugin;
 use Bookit\Classes\Base\User;
 use Bookit\Classes\Database\Appointments;
 use Bookit\Classes\Database\Customers;
+use Bookit\Classes\Database\Services;
 use Bookit\Classes\Database\Staff_Services;
+use Bookit\Classes\Database\Staff_Working_Hours;
 use Bookit\Classes\Vendor\Payments;
 use Bookit\Helpers\CleanHelper;
 use DateTimeZone;
@@ -141,7 +143,7 @@ class AppointmentController {
 
 		$appointment = Appointments::checkAppointment( $data );
 
-		if ( $appointment > 0 ) {
+		if ( $appointment > 0 || ( $data['start_time'] && ! self::is_bookable_slot( $data ) ) ) {
 			$errors['appointment'] = __( 'Selected Service Time is not available!', 'bookit' );
 		}
 
@@ -192,6 +194,193 @@ class AppointmentController {
 	}
 
 	/**
+	 * The current client's identifier for rate limiting. An IPv6 address is
+	 * collapsed to its /64, since a client usually controls that whole range.
+	 * Behind a proxy or CGNAT REMOTE_ADDR is shared, so a site that needs the real
+	 * client address resolves it through the bookit_booking_rate_client_ip filter.
+	 *
+	 * @since 2.6.0.10
+	 *
+	 * @return string
+	 */
+	private static function rate_limit_ip() {
+		$ip = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
+		if ( '' !== $ip && false !== filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6 ) ) {
+			$ip = bin2hex( substr( inet_pton( $ip ), 0, 8 ) ) . '::/64';
+		}
+
+		/**
+		 * The identifier a public booking is rate-limited by. Defaults to the
+		 * client IP, with an IPv6 address collapsed to its /64. A site behind a
+		 * proxy or CGNAT can resolve the real client address here.
+		 *
+		 * @since 2.6.0.10
+		 *
+		 * @param string $ip The rate-limit identifier.
+		 */
+		return (string) apply_filters( 'bookit_booking_rate_client_ip', $ip );
+	}
+
+	/**
+	 * Refuse a public booking once the current client has reached the limit.
+	 * Called after validation, so only genuine booking attempts count; the
+	 * read-and-increment is serialized with a named lock so parallel requests
+	 * can't each pass a stale count. Staff and admins are not throttled.
+	 *
+	 * @since 2.6.0.10
+	 */
+	private static function enforce_booking_rate_limit() {
+		if ( current_user_can( 'manage_bookit_staff' ) ) {
+			return;
+		}
+
+		/**
+		 * How many public bookings one client may create per window before the
+		 * endpoint refuses further attempts. Zero or less disables the limit.
+		 *
+		 * @since 2.6.0.10
+		 *
+		 * @param int $limit Maximum bookings per window. Default 5.
+		 */
+		$limit = (int) apply_filters( 'bookit_booking_rate_limit', 5 );
+
+		/**
+		 * The rolling window the limit is counted over, in seconds. Kept separate
+		 * from the limit so a site can retune either the count or the window on its
+		 * own, for example 5 per day rather than 5 per hour.
+		 *
+		 * @since 2.6.0.10
+		 *
+		 * @param int $window Window length in seconds. Default one hour.
+		 */
+		$window = (int) apply_filters( 'bookit_booking_rate_window', HOUR_IN_SECONDS );
+
+		$ip = self::rate_limit_ip();
+		if ( $limit <= 0 || $window <= 0 || '' === $ip ) {
+			return;
+		}
+
+		global $wpdb;
+		$key  = 'bookit_rl_' . md5( $ip ) . '_' . (int) floor( time() / $window );
+		$lock = Appointments::lock_name( 'bookit_rl_' . md5( $ip ) );
+
+		/*
+		 * Fail closed: if the lock can't be taken within the timeout the
+		 * read-and-increment would run unserialized, so refuse rather than let
+		 * parallel requests each pass a stale count. The lock is per client, so
+		 * failing closed only ever delays that same client.
+		 */
+		$locked = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK(%s, %d)', $lock, 2 ) );
+		if ( 1 !== $locked ) {
+			wp_send_json_error( array( 'message' => __( 'Too many booking attempts. Please try again later.', 'bookit' ) ) );
+		}
+
+		$count = (int) get_transient( $key );
+		if ( $count >= $limit ) {
+			$wpdb->get_var( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $lock ) );
+			wp_send_json_error( array( 'message' => __( 'Too many booking attempts. Please try again later.', 'bookit' ) ) );
+		}
+		set_transient( $key, $count + 1, $window );
+		$wpdb->get_var( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $lock ) );
+	}
+
+	/**
+	 * Cancel front-end holds awaiting an immediate online payment that never
+	 * completed, freeing their slots. Fired on a schedule.
+	 *
+	 * Cancels directly rather than through the status-change path on purpose, so no
+	 * cancellation email is sent to the unverified address on an abandoned hold.
+	 * Each cancellation fires `bookit_appointment_expired` so an integration that
+	 * reserved the slot elsewhere, such as the Google Calendar add-on, can release
+	 * it.
+	 *
+	 * @since 2.6.0.10
+	 *
+	 * @param int $ttl_seconds How long a pending online hold may keep its slot.
+	 */
+	public static function expire_abandoned_bookings( $ttl_seconds ) {
+		foreach ( Appointments::get_expired_online_hold_ids( $ttl_seconds ) as $id ) {
+			Appointments::cancel( $id );
+
+			/**
+			 * Fires after an abandoned booking is cancelled, so an integration such
+			 * as the Google Calendar add-on can free the slot it reserved.
+			 *
+			 * @since 2.6.0.10
+			 *
+			 * @param int $id The cancelled appointment id.
+			 */
+			do_action( 'bookit_appointment_expired', $id );
+		}
+	}
+
+	/**
+	 * Whether the slot lies inside the staff member's working hours, clear of
+	 * their break, and has not started yet.
+	 *
+	 * Booking times are the business's wall-clock times stored as if they were
+	 * UTC (the booking app pins moment to GMT), so they are read with gmdate()
+	 * and compared with the site's wall clock.
+	 *
+	 * @since 2.6.0.10
+	 *
+	 * @param array $data Booking data with staff_id, date_timestamp, start_time and end_time.
+	 *
+	 * @return bool True when the slot has positive length, lies in the future, inside working hours, on a valid slot grid and clear of the break.
+	 */
+	private static function is_bookable_slot( $data ) {
+		// A slot must have positive length; a zero-duration service has nothing to book.
+		if ( $data['end_time'] <= $data['start_time'] ) {
+			return false;
+		}
+
+		$now = time() + wp_timezone()->getOffset( new DateTime() );
+		if ( $data['start_time'] < $now ) {
+			return false;
+		}
+
+		$hours = Staff_Working_Hours::get_by_staff_and_weekday( $data['staff_id'], (int) gmdate( 'N', $data['start_time'] ) );
+		if ( ! $hours || ! $hours->start_time || ! $hours->end_time ) {
+			return false;
+		}
+
+		$at = function ( $time ) use ( $data ) {
+			return strtotime( $time . ' UTC', $data['date_timestamp'] );
+		};
+
+		$shift_start = $at( $hours->start_time );
+		$shift_end   = $at( $hours->end_time );
+
+		// A working day ending at 00:00 runs until midnight.
+		if ( $at( '00:00' ) === $shift_end ) {
+			$shift_end += DAY_IN_SECONDS;
+		}
+
+		if ( $data['start_time'] < $shift_start || $data['end_time'] > $shift_end ) {
+			return false;
+		}
+
+		/*
+		 * The start must sit on a real slot grid: the default view steps by the
+		 * service duration from the shift start, the step-by-step view by the slot
+		 * duration from midnight. Accept a start on either so a forged off-grid time
+		 * (09:20 for a 60-minute service) is refused without rejecting a valid 09:15.
+		 */
+		$length    = $data['end_time'] - $data['start_time'];
+		$settings  = SettingsController::get_settings();
+		$slot_step = (int) ( $settings['time_slot_duration'] ?? 0 ) * MINUTE_IN_SECONDS;
+		$on_grid   = 0 === ( $data['start_time'] - $shift_start ) % $length
+			|| ( $slot_step > 0 && 0 === ( $data['start_time'] - $data['date_timestamp'] ) % $slot_step );
+		if ( ! $on_grid ) {
+			return false;
+		}
+
+		return ! ( $hours->break_from && $hours->break_to
+			&& $data['start_time'] < $at( $hours->break_to )
+			&& $data['end_time'] > $at( $hours->break_from ) );
+	}
+
+	/**
 	 * Book Appointment
 	 *
 	 * @since 2.6.0 Require authentication and link the booking to the current user in Registered mode.
@@ -209,8 +398,11 @@ class AppointmentController {
 
 		$data = CleanHelper::cleanData( $_POST, self::getCleanRules() );
 
-		// Payment status is server-owned; drop any client value so a public booking can't be stored as paid.
-		unset( $data['payment_status'] );
+		// Payment status and origin are server-owned; drop any client value so a public booking can't be stored as paid or as admin-entered.
+		unset( $data['payment_status'], $data['created_from'] );
+
+		// A public booking always creates a new appointment; a submitted id would only skip that row in the conflict check.
+		unset( $data['id'] );
 
 		// Identify the booking from the current session.
 		$data['user_id'] = get_current_user_id();
@@ -228,37 +420,71 @@ class AppointmentController {
 			$data['email'] = wp_get_current_user()->user_email;
 		}
 
+		/*
+		 * The service sets how much time the price buys, so the length and day come
+		 * from the server. With no service there is nothing to derive them from, so
+		 * the booking fails closed.
+		 */
+		$service = Services::get( 'id', $data['service_id'] );
+		if ( ! $service ) {
+			wp_send_json_error( array( 'errors' => array( 'service_id' => __( 'No service', 'bookit' ) ) ) );
+		}
+		$data['end_time']       = $data['start_time'] + (int) $service->duration;
+		$data['date_timestamp'] = $data['start_time'] - $data['start_time'] % DAY_IN_SECONDS;
+
 		// The price is server-owned; never store the submitted value.
 		$data['clear_price'] = self::validate( $data );
 		if ( null === $data['clear_price'] ) {
 			return;
 		}
 
+		// A genuine booking reached this point; count it toward the client's rate limit.
+		self::enforce_booking_rate_limit();
+
 		if ( empty( $data ) ) {
 			wp_send_json_error( array( 'message' => __( 'Error occurred!', 'bookit' ) ) );
 			die();
 		}
 
-		$customer = CustomerController::get_customer( $data );
+		/*
+		 * Without the lock a parallel booking could pass the same overlap check
+		 * before either is stored, so the check runs again under it. It is taken
+		 * after the rate limiter, whose own named lock would release it on MySQL
+		 * before 5.7.5.
+		 */
+		$unavailable = array( 'errors' => array( 'appointment' => __( 'Selected Service Time is not available!', 'bookit' ) ) );
+		if ( ! Appointments::lock_staff( $data['staff_id'] ) ) {
+			wp_send_json_error( $unavailable );
+		}
 
-		$notes = array();
-		if ( ! empty( $data['comment'] ) ) {
-			$notes['comment'] = $data['comment'];
-		}
-		if ( $customer->email != $data['email'] ) {
-			$notes['email'] = $data['email'];
-		}
-		if ( $customer->phone != $data['phone'] && ! empty( $data['phone'] ) ) {
-			$notes['phone'] = $data['phone'];
-		}
-		if ( $customer->full_name != $data['full_name'] && ! empty( $data['full_name'] ) ) {
-			$notes['full_name'] = $data['full_name'];
-		}
-		$data['customer_id'] = $customer->id;
-		$data['notes']       = serialize( $notes );
-		$data['status']      = Appointments::$pending;
+		try {
+			if ( Appointments::checkAppointment( $data ) ) {
+				wp_send_json_error( $unavailable );
+			}
 
-		$id = Appointments::create_appointment( $data );
+			$customer = CustomerController::get_customer( $data );
+
+			$notes = array();
+			if ( ! empty( $data['comment'] ) ) {
+				$notes['comment'] = $data['comment'];
+			}
+			if ( $customer->email != $data['email'] ) {
+				$notes['email'] = $data['email'];
+			}
+			if ( $customer->phone != $data['phone'] && ! empty( $data['phone'] ) ) {
+				$notes['phone'] = $data['phone'];
+			}
+			if ( $customer->full_name != $data['full_name'] && ! empty( $data['full_name'] ) ) {
+				$notes['full_name'] = $data['full_name'];
+			}
+			$data['customer_id'] = $customer->id;
+			$data['notes']       = serialize( $notes );
+			$data['status']      = Appointments::$pending;
+
+			$id = Appointments::create_appointment( $data );
+		} finally {
+			Appointments::unlock_staff( $data['staff_id'] );
+		}
 
 		do_action( 'bookit_appointment_created', $id );
 

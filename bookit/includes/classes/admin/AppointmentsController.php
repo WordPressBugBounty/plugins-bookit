@@ -428,22 +428,20 @@ class AppointmentsController extends DashboardController {
 		$errors   = array();
 		$settings = SettingsController::get_settings();
 
-		$appointmentId = (int) Appointments::checkAppointment( $data );
+		$appointment_id = (int) Appointments::checkAppointment( $data );
 
-		if (
-			(
-				null !== $appointmentId
-				&& 0 !== $appointmentId
-				&& ! isset( $data['id'] )
-			)
-			||
-				(
-					null !== $appointmentId
-					&& 0 !== $appointmentId
-					&& isset( $data['id'] )
-					&& $appointmentId !== $data['id']
-				)
-		) {
+		// When editing an existing row without moving it, an overlap that already
+		// exists must not block a metadata-only change (comment, status, payment).
+		$editing_same_slot = false;
+		if ( ! empty( $data['id'] ) ) {
+			$stored            = Appointments::get( 'id', (int) $data['id'] );
+			$editing_same_slot = $stored
+				&& (int) $stored->staff_id === (int) $data['staff_id']
+				&& (int) $stored->start_time === (int) $data['start_time']
+				&& (int) $stored->end_time === (int) $data['end_time'];
+		}
+
+		if ( ! $editing_same_slot && $appointment_id > 0 && ( ! isset( $data['id'] ) || $appointment_id !== (int) $data['id'] ) ) {
 			$errors['dates'] = __( 'Selected Service Time is not available!', 'bookit' );
 		}
 
@@ -510,12 +508,22 @@ class AppointmentsController extends DashboardController {
 			return false;
 		}
 		$data = CleanHelper::cleanData( $_POST, self::getCleanRules() );
-		self::validate( $data );
 
-		/**
-		 * CREATE APPOINTMENT CODE
-		 */
-		if ( ! empty( $data ) ) {
+		// Without the lock a parallel save could pass the same overlap check before either is stored.
+		if ( ! Appointments::lock_staff( $data['staff_id'] ) ) {
+			wp_send_json_error( array( 'errors' => array( 'dates' => __( 'Selected Service Time is not available!', 'bookit' ) ) ) );
+		}
+
+		try {
+			self::validate( $data );
+
+			/**
+			 * CREATE APPOINTMENT CODE
+			 */
+			if ( empty( $data ) ) {
+				return;
+			}
+
 			$data['created_from'] = 'back';
 			$notes['comment']     = $data['comment'];
 
@@ -532,34 +540,36 @@ class AppointmentsController extends DashboardController {
 			$data['notes'] = serialize( $notes ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_serialize
 
 			$id = Appointments::create_appointment( $data );
-
-			do_action( 'bookit_appointment_created', $id );
-
-			$appointment          = (array) Appointments::get_full_appointment_by_id( $id );
-			$appointment['notes'] = unserialize( trim( $data['notes'] ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_unserialize
-
-			$dateTimestamp                       = \DateTime::createFromFormat( 'U', $appointment['date_timestamp'], wp_timezone() );
-			$appointment['date_timestamp_title'] = $dateTimestamp->format( 'd.m.Y' );
-			$startTime                           = \DateTime::createFromFormat( 'U', $appointment['start_time'], wp_timezone() );
-			$endTime                             = \DateTime::createFromFormat( 'U', $appointment['end_time'], wp_timezone() );
-			$appointment['time_title']           = $startTime->format( 'H:i' ) . ' - ' . $endTime->format( 'H:i' );
-
-			/** if google calendar addon is installed */
-			if (
-				Plugin::isAddonInstalledAndEnabled( self::$proAddon )
-				&& has_action( 'bookit_google_calendar_create_appointment' )
-			) {
-				do_action( 'bookit_google_calendar_create_appointment', $appointment );
-			}
-			/** if google calendar addon is installed | end */
-
-			wp_send_json_success(
-				array(
-					'appointment' => $appointment,
-					'message'     => __( 'Appointment Saved!', 'bookit' ),
-				)
-			);
+		} finally {
+			Appointments::unlock_staff( $data['staff_id'] );
 		}
+
+		do_action( 'bookit_appointment_created', $id );
+
+		$appointment          = (array) Appointments::get_full_appointment_by_id( $id );
+		$appointment['notes'] = unserialize( trim( $data['notes'] ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_unserialize
+
+		$dateTimestamp                       = \DateTime::createFromFormat( 'U', $appointment['date_timestamp'], wp_timezone() );
+		$appointment['date_timestamp_title'] = $dateTimestamp->format( 'd.m.Y' );
+		$startTime                           = \DateTime::createFromFormat( 'U', $appointment['start_time'], wp_timezone() );
+		$endTime                             = \DateTime::createFromFormat( 'U', $appointment['end_time'], wp_timezone() );
+		$appointment['time_title']           = $startTime->format( 'H:i' ) . ' - ' . $endTime->format( 'H:i' );
+
+		/** if google calendar addon is installed */
+		if (
+			Plugin::isAddonInstalledAndEnabled( self::$proAddon )
+			&& has_action( 'bookit_google_calendar_create_appointment' )
+		) {
+			do_action( 'bookit_google_calendar_create_appointment', $appointment );
+		}
+		/** if google calendar addon is installed | end */
+
+		wp_send_json_success(
+			array(
+				'appointment' => $appointment,
+				'message'     => __( 'Appointment Saved!', 'bookit' ),
+			)
+		);
 	}
 
 	/**
@@ -573,9 +583,18 @@ class AppointmentsController extends DashboardController {
 		}
 
 		$data = CleanHelper::cleanData( $_POST, self::getCleanRules() );
-		self::validate( $data );
 
-		if ( ! empty( $data['id'] ) ) {
+		if ( empty( $data['id'] ) ) {
+			wp_send_json_error( array( 'message' => __( 'Error occurred!', 'bookit' ) ) );
+		}
+
+		// Without the lock a parallel save could pass the same overlap check before either is stored.
+		if ( ! Appointments::lock_staff( $data['staff_id'] ) ) {
+			wp_send_json_error( array( 'errors' => array( 'dates' => __( 'Selected Service Time is not available!', 'bookit' ) ) ) );
+		}
+
+		try {
+			self::validate( $data );
 
 			$appointment = (array) Appointments::get_full_appointment_by_id( $data['id'] );
 			$notes       = unserialize( $appointment['notes'] ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_unserialize
@@ -590,40 +609,41 @@ class AppointmentsController extends DashboardController {
 			$data['notes'] = serialize( $notes ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_serialize
 
 			Appointments::update_appointment( $data, $data['id'] );
-			/** add phone to customer if not filled yet and value exist **/
-			if ( null === $customer->phone && ! empty( $data['customer_phone'] ) ) {
-				Customers::update( array( 'phone' => $data['customer_phone'] ), array( 'id' => $customer->id ) );
-			}
-
-			do_action( 'bookit_appointment_updated', $data['id'] );
-
-			$updatedAppointment          = (array) Appointments::get_full_appointment_by_id( $data['id'] );
-			$updatedAppointment['notes'] = unserialize( trim( $updatedAppointment['notes'] ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_unserialize
-
-			$dateTimestamp                              = \DateTime::createFromFormat( 'U', $updatedAppointment['date_timestamp'], wp_timezone() );
-			$updatedAppointment['date_timestamp_title'] = $dateTimestamp->format( 'd.m.Y' );
-			$startTime                                  = \DateTime::createFromFormat( 'U', $updatedAppointment['start_time'], wp_timezone() );
-			$endTime                                    = \DateTime::createFromFormat( 'U', $updatedAppointment['end_time'], wp_timezone() );
-			$updatedAppointment['time_title']           = $startTime->format( 'H:i' ) . ' - ' . $endTime->format( 'H:i' );
-
-			/** if google calendar addon is installed */
-			if (
-				Plugin::isAddonInstalledAndEnabled( self::$proAddon )
-				&& has_action( 'bookit_google_calendar_update_appointment' )
-			) {
-				do_action( 'bookit_google_calendar_update_appointment', $appointment, $updatedAppointment );
-			}
-			/** if google calendar addon is installed | end */
-
-			wp_send_json_success(
-				array(
-					'appointment' => $updatedAppointment,
-					'message'     => __( 'Appointment Updated!', 'bookit' ),
-				)
-			);
+		} finally {
+			Appointments::unlock_staff( $data['staff_id'] );
 		}
 
-		wp_send_json_error( array( 'message' => __( 'Error occurred!', 'bookit' ) ) );
+		/** add phone to customer if not filled yet and value exist **/
+		if ( null === $customer->phone && ! empty( $data['customer_phone'] ) ) {
+			Customers::update( array( 'phone' => $data['customer_phone'] ), array( 'id' => $customer->id ) );
+		}
+
+		do_action( 'bookit_appointment_updated', $data['id'] );
+
+		$updatedAppointment          = (array) Appointments::get_full_appointment_by_id( $data['id'] );
+		$updatedAppointment['notes'] = unserialize( trim( $updatedAppointment['notes'] ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_unserialize
+
+		$dateTimestamp                              = \DateTime::createFromFormat( 'U', $updatedAppointment['date_timestamp'], wp_timezone() );
+		$updatedAppointment['date_timestamp_title'] = $dateTimestamp->format( 'd.m.Y' );
+		$startTime                                  = \DateTime::createFromFormat( 'U', $updatedAppointment['start_time'], wp_timezone() );
+		$endTime                                    = \DateTime::createFromFormat( 'U', $updatedAppointment['end_time'], wp_timezone() );
+		$updatedAppointment['time_title']           = $startTime->format( 'H:i' ) . ' - ' . $endTime->format( 'H:i' );
+
+		/** if google calendar addon is installed */
+		if (
+			Plugin::isAddonInstalledAndEnabled( self::$proAddon )
+			&& has_action( 'bookit_google_calendar_update_appointment' )
+		) {
+			do_action( 'bookit_google_calendar_update_appointment', $appointment, $updatedAppointment );
+		}
+		/** if google calendar addon is installed | end */
+
+		wp_send_json_success(
+			array(
+				'appointment' => $updatedAppointment,
+				'message'     => __( 'Appointment Updated!', 'bookit' ),
+			)
+		);
 	}
 
 	/**

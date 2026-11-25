@@ -82,6 +82,7 @@ class CustomerController {
 	 * payload so booking can continue without leaving the page.
 	 *
 	 * @since 2.6.0
+	 * @since 2.6.0.10 Refuse an existing email with the same message as any other refused account.
 	 */
 	public static function register() {
 		check_ajax_referer( 'bookit_register', 'nonce' );
@@ -109,8 +110,10 @@ class CustomerController {
 			wp_send_json_error( array( 'errors' => $errors ) );
 		}
 
+		$refused = array( 'message' => __( 'Could not create your account. If you already have one, please log in.', 'bookit' ) );
+
 		if ( get_user_by( 'email', $email ) ) {
-			wp_send_json_error( array( 'message' => __( 'An account with this email already exists. Please log in.', 'bookit' ) ) );
+			wp_send_json_error( $refused );
 		}
 
 		$user_id = Customers::save_or_get_wp_user( array(
@@ -122,7 +125,7 @@ class CustomerController {
 
 		// Never create or authenticate a privileged account through the booking form.
 		if ( is_wp_error( $user_id ) || ! $user_id || user_can( $user_id, 'administrator' ) ) {
-			wp_send_json_error( array( 'message' => __( 'Could not create your account. Please try again.', 'bookit' ) ) );
+			wp_send_json_error( $refused );
 		}
 
 		// Make the just-issued session available to wp_create_nonce() in this request.

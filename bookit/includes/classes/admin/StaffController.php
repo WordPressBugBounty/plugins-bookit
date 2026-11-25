@@ -30,28 +30,50 @@ class StaffController extends DashboardController {
 			),
 		);
 	}
+
+	/**
+	 * Keep a well-formed HH:MM(:SS) time, or null for an empty value or junk.
+	 *
+	 * @since 2.6.0.10
+	 *
+	 * @param mixed $value The submitted time.
+	 *
+	 * @return string|null
+	 */
+	private static function sanitize_time( $value ) {
+		if ( ! $value || ! is_string( $value ) ) {
+			return null;
+		}
+
+		return preg_match( '/^([01]?\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/', $value ) ? gmdate( 'H:i:s', strtotime( $value . ' UTC' ) ) : null;
+	}
 	/**
 	 * Display Rendered Template
 	 * @return bool|string
 	 */
 	public static function render() {
 
-		$bookitUser = self::bookitUser();
+		$bookit_user = self::bookitUser();
 
-		/** show just self if this staff */
-		if ( true == $bookitUser['is_staff'] ) {
-			$staff = $bookitUser['staff'];
-		} else {
+		/** A staff member sees only their own row; the full list is admin-only. */
+		if ( $bookit_user['is_staff'] ) {
+			$staff = $bookit_user['staff'];
+		} elseif ( current_user_can( 'manage_options' ) ) {
 			$staff = Staff::get_all();
+		} else {
+			$staff = array();
 		}
 
 		$services = Services::get_all_short();
-		$wp_users = get_users(
-			array(
-				'fields'       => array( 'ID', 'display_name', 'user_email' ),
-				'role__not_in' => array( 'administrator' ),
+		// The user list only feeds the admin-only "link a WordPress account" control, so it is not sent to staff-level viewers.
+		$wp_users = current_user_can( 'manage_options' )
+			? get_users(
+				array(
+					'fields'       => array( 'ID', 'display_name', 'user_email' ),
+					'role__not_in' => array( 'administrator' ),
+				)
 			)
-		);
+			: array();
 
 		$addons = array();
 		$answer = array();
@@ -233,76 +255,135 @@ class StaffController extends DashboardController {
 		$data = CleanHelper::cleanData( $_POST, self::getCleanRules() );
 		self::validate( $data );
 
-		$id = ( ! empty( $data['id'] ) ) ? $data['id'] : null;
+		$id = ( ! empty( $data['id'] ) ) ? (int) $data['id'] : null;
 
-		/** if this is staff can edit just self data */
-		$bookitUser = self::bookitUser();
-		if ( true == $bookitUser['is_staff'] && ( null == $id || ( (int) $bookitUser['staff'][0]['id'] != (int) $id ) ) ) {
-			return false;
+		// Managing any staff member, linking a WordPress account and granting the
+		// staff role are admin-only. A bookit_staff user may edit only their own
+		// linked record; anyone else (e.g. an editor holding manage_bookit_staff) is refused.
+		$is_admin    = current_user_can( 'manage_options' );
+		$bookit_user = self::bookitUser();
+		if ( ! $is_admin ) {
+			$own_id = ( $bookit_user['is_staff'] && ! empty( $bookit_user['staff'] ) ) ? (int) $bookit_user['staff'][0]['id'] : 0;
+			if ( ! $own_id || null === $id || $own_id !== $id ) {
+				wp_send_json_error( array( 'message' => __( 'You are not allowed to manage this staff member.', 'bookit' ) ) );
+			}
 		}
-
-		if ( empty( $data ) ) {
-			wp_send_json_error( array( 'message' => __( 'Error occurred!', 'bookit' ) ) );
-			return false;
-		}
-
-		$data['full_name'] = stripslashes( $data['full_name'] );
 
 		$staff_services = json_decode( stripslashes( $data['staff_services'] ?? '' ) );
 		$working_hours  = json_decode( stripslashes( $data['working_hours'] ?? '' ) );
 
-		unset( $data['staff_services'] );
-		unset( $data['working_hours'] );
-		unset( $data['gc_token'] );
+		// Build the staff row from known columns only, so a crafted request can't
+		// write arbitrary fields (e.g. wp_user_id) to the staff record.
+		$staff_row = array(
+			'full_name' => stripslashes( $data['full_name'] ),
+			'email'     => $data['email'],
+			'phone'     => $data['phone'] ?? '',
+		);
 
-		if ( isset( $id ) ) {
-			Staff::update( $data, array( 'id' => $id ) );
+		$is_new          = ( null === $id );
+		$prev_wp_user_id = $is_new ? 0 : (int) ( Staff::get( 'id', $id )->wp_user_id ?? 0 );
 
-			Staff_Services::delete_where( 'staff_id', $id );
-
-			foreach ( $working_hours as $working_hour ) {
-				$update = array(
-					'id'         => $working_hour->id,
-					'staff_id'   => $id,
-					'weekday'    => $working_hour->weekday,
-					'start_time' => $working_hour->start_time,
-					'end_time'   => $working_hour->end_time,
-					'break_from' => $working_hour->break_from ?? null,
-                    'break_to'   => $working_hour->break_to ?? null,
-				);
-				Staff_Working_Hours::update( $update, array( 'id' => $update['id'] ) );
+		// Linking a WordPress account is admin-only, and the link is re-checked only
+		// when it changes, so editing a staff member whose linked user was deleted or
+		// later gained manage_options is not refused for a metadata-only change. An
+		// empty value detaches any existing link; a new link is never an admin account.
+		$wp_user = false;
+		if ( $is_admin ) {
+			$wp_user_id = (int) ( $data['wp_user_id'] ?? 0 );
+			if ( ! $wp_user_id ) {
+				$staff_row['wp_user_id'] = null;
+			} elseif ( $wp_user_id !== $prev_wp_user_id ) {
+				$wp_user = get_user_by( 'ID', $wp_user_id );
+				if ( ! $wp_user || user_can( $wp_user, 'manage_options' ) || is_super_admin( $wp_user->ID ) ) {
+					wp_send_json_error(
+						array(
+							'errors'  => array( 'wp_user_id' => __( 'Please choose a valid user', 'bookit' ) ),
+							'message' => __( 'Error occurred!', 'bookit' ),
+						)
+					);
+				}
+				$staff_row['wp_user_id'] = $wp_user_id;
 			}
-		} else {
-			Staff::insert( $data );
-
+		}
+		if ( $is_new ) {
+			Staff::insert( $staff_row );
 			$id = Staff::insert_id();
+		} else {
+			Staff::update( $staff_row, array( 'id' => $id ) );
+		}
 
-			foreach ( $working_hours as $working_hour ) {
-				$insert = array(
-					'staff_id'   => $id,
-					'weekday'    => $working_hour->weekday,
-					'start_time' => $working_hour->start_time,
-					'end_time'   => $working_hour->end_time,
-					'break_from' => $working_hour->break_from ?? null,
-                    'break_to'   => $working_hour->break_to ?? null,
+		// A working-hours row is updated only when it already belongs to this staff
+		// member, so a submitted row id for another staff member matches nothing.
+		foreach ( (array) $working_hours as $working_hour ) {
+			$weekday = (int) ( $working_hour->weekday ?? 0 );
+			if ( $weekday < 1 || $weekday > 7 ) {
+				continue;
+			}
+			$start      = self::sanitize_time( $working_hour->start_time ?? null );
+			$end        = self::sanitize_time( $working_hour->end_time ?? null );
+			$break_from = self::sanitize_time( $working_hour->break_from ?? null );
+			$break_to   = self::sanitize_time( $working_hour->break_to ?? null );
+
+			// A working day ending at 00:00 runs until midnight.
+			$closes = '00:00:00' === $end ? '24:00:00' : $end;
+
+			// A working day and a break each need both endpoints in order, and the break must sit inside the day.
+			if ( null === $start || null === $end || $start >= $closes ) {
+				$start = null;
+				$end   = null;
+			}
+			if ( null === $start || null === $break_from || null === $break_to || $break_from >= $break_to || $break_from < $start || $break_to > $closes ) {
+				$break_from = null;
+				$break_to   = null;
+			}
+
+			$row = array(
+				'staff_id'   => $id,
+				'weekday'    => $weekday,
+				'start_time' => $start,
+				'end_time'   => $end,
+				'break_from' => $break_from,
+				'break_to'   => $break_to,
+			);
+			// A new member's rows are inserted; an existing member's rows are updated
+			// in place, keyed on both id and staff_id so a submitted id for another
+			// member matches nothing. An existing member cannot insert extra rows,
+			// which stops duplicate weekday entries.
+			$row_id = (int) ( $working_hour->id ?? 0 );
+			if ( $is_new ) {
+				Staff_Working_Hours::insert( $row );
+			} elseif ( $row_id ) {
+				$where = array(
+					'id'       => $row_id,
+					'staff_id' => $id,
 				);
-				Staff_Working_Hours::insert( $insert );
+				Staff_Working_Hours::update( $row, $where );
 			}
 		}
 
-		foreach ( $staff_services as $staff_service ) {
-			$insert = array(
-				'staff_id'   => $id,
-				'service_id' => $staff_service->id,
-				'price'      => number_format( (float) $staff_service->price, 2, '.', '' ),
-			);
-			Staff_Services::insert( $insert );
+		// Only an admin rebuilds the staff/service links and their prices; a staff
+		// member editing their own profile keeps whatever the admin assigned, so
+		// they cannot attach themselves to extra services or set their own prices.
+		if ( $is_admin ) {
+			Staff_Services::delete_where( 'staff_id', $id );
+			foreach ( (array) $staff_services as $staff_service ) {
+				$service_id = (int) ( $staff_service->id ?? 0 );
+				if ( ! $service_id || ! Services::get( 'id', $service_id ) ) {
+					continue;
+				}
+				$service_row = array(
+					'staff_id'   => $id,
+					'service_id' => $service_id,
+					'price'      => number_format( max( 0, (float) ( $staff_service->price ?? 0 ) ), 2, '.', '' ),
+				);
+				Staff_Services::insert( $service_row );
+			}
 		}
 
-		/** set bookit staff role if WordPress user connected */
-		if ( $data['wp_user_id'] ) {
-			$wpUser = get_user_by( 'ID', $data['wp_user_id'] );
-			$wpUser->set_role( User::$staff_role );
+		// $wp_user is set only when the link just changed, so granting the staff role
+		// here never reverts a role an admin later gave that user on purpose.
+		if ( $wp_user ) {
+			$wp_user->set_role( User::$staff_role );
 		}
 
 		// Always return staff data so frontend can use cleaned phone number.

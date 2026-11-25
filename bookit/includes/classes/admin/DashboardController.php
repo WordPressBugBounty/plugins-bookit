@@ -86,6 +86,11 @@ class DashboardController {
 	 */
 	public static function add_feedback() {
 		check_ajax_referer( 'bookit_add_feedback', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
 		update_option( 'bookit_feedback_added', true );
 	}
 

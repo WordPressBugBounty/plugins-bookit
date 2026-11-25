@@ -29,4 +29,26 @@ class Staff_Working_Hours extends DatabaseModel {
 
 		maybe_create_table( $table_name, $sql );
 	}
+
+	/**
+	 * Get a staff member's working hours for one weekday.
+	 *
+	 * @since 2.6.0.10
+	 *
+	 * @param int $staff_id The staff member ID.
+	 * @param int $weekday  ISO-8601 weekday, 1 (Monday) to 7 (Sunday).
+	 *
+	 * @return object|null The working hours row, or null when none is stored.
+	 */
+	public static function get_by_staff_and_weekday( $staff_id, $weekday ) {
+		global $wpdb;
+
+		return $wpdb->get_row(
+			$wpdb->prepare(
+				'SELECT * FROM `' . esc_sql( self::_table() ) . '` WHERE staff_id = %d AND weekday = %d', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				$staff_id,
+				$weekday
+			)
+		);
+	}
 }

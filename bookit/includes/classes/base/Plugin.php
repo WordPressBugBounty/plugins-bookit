@@ -84,6 +84,7 @@ class Plugin {
 	 * Plugin deactivation
 	 */
 	public static function deactivate() {
+		wp_clear_scheduled_hook( 'bookit_expire_abandoned_bookings' );
 	}
 
 	/**

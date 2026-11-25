@@ -59,6 +59,7 @@ class Appointments extends DatabaseModel {
 			'customer_id'    => $data['customer_id'],
 			'service_id'     => $data['service_id'],
 			'status'         => $data['status'],
+			'created_from'   => ( ! empty( $data['created_from'] ) && 'back' === $data['created_from'] ) ? 'back' : 'front',
 			'date_timestamp' => (int) $data['date_timestamp'],
 			'start_time'     => (int) $data['start_time'],
 			'end_time'       => (int) $data['end_time'],
@@ -313,20 +314,111 @@ class Appointments extends DatabaseModel {
 	}
 
 	/**
-	 * Check Appointment
-	 * @param $data
-	 * @return mixed
+	 * Return the ids of front-end holds awaiting an immediate online payment that
+	 * is still pending, or was rejected, after a TTL.
+	 *
+	 * Only immediate-gateway holds are returned; pay-in-person ("locally") and free
+	 * bookings are pending by design, not abandoned. Rejections recorded as
+	 * 'write_failed' are excluded too: there the payment cleared but the write lost
+	 * a race, so cancelling would resell a slot the client already paid for.
+	 *
+	 * @since 2.6.0.10
+	 *
+	 * @param int $ttl_seconds How long a pending online booking may hold its slot.
+	 *
+	 * @return int[] Appointment ids to cancel.
+	 */
+	public static function get_expired_online_hold_ids( $ttl_seconds ) {
+		global $wpdb;
+
+		/*
+		 * Only immediate gateways: PayPal (eCheck) and WooCommerce (bank transfer,
+		 * cheque) can still complete days later, so auto-cancelling them risks a
+		 * paid-but-cancelled booking. Those are left for the admin to manage.
+		 */
+		$gateways = array( 'stripeConnect', 'stripe' );
+		$cutoff   = wp_date( 'Y-m-d H:i:s', time() - (int) $ttl_seconds );
+		$tokens   = implode( ', ', array_fill( 0, count( $gateways ), '%s' ) );
+
+		$sql = sprintf(
+			'SELECT a.id, p.notes FROM `%1$s` AS a
+					INNER JOIN `%2$s` AS p ON p.appointment_id = a.id
+					WHERE a.status = %%s
+					AND a.created_from = %%s
+					AND a.created_at < %%s
+					AND p.status IN ( %%s, %%s )
+					AND p.type IN ( %3$s )',
+			esc_sql( self::_table() ),
+			esc_sql( Payments::_table() ),
+			$tokens
+		);
+
+		// 'front', 'pending' and 'rejected' are the created_from and payment-status ENUM values.
+		$args = array_merge(
+			array( self::$pending, 'front', $cutoff, 'pending', 'rejected' ),
+			$gateways
+		);
+
+		$rows = (array) $wpdb->get_results( $wpdb->prepare( $sql, $args ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+
+		$ids = array();
+		foreach ( $rows as $row ) {
+			$notes = maybe_unserialize( $row->notes );
+			if ( is_array( $notes ) && 'write_failed' === ( $notes['reason'] ?? '' ) ) {
+				// Payment cleared but the write lost a race; leave it for the admin.
+				continue;
+			}
+			$ids[] = (int) $row->id;
+		}
+
+		return $ids;
+	}
+
+	/**
+	 * Cancel one appointment and its payment.
+	 *
+	 * @since 2.6.0.10
+	 *
+	 * @param int $id The appointment id.
+	 */
+	public static function cancel( $id ) {
+		global $wpdb;
+
+		$now         = wp_date( 'Y-m-d H:i:s' );
+		$appointment = array(
+			'status'     => self::$cancelled,
+			'updated_at' => $now,
+		);
+		$payment     = array(
+			'status'     => 'cancelled',
+			'updated_at' => $now,
+		);
+		$wpdb->update( self::_table(), $appointment, array( 'id' => (int) $id ) );
+		$wpdb->update( Payments::_table(), $payment, array( 'appointment_id' => (int) $id ) );
+	}
+
+	/**
+	 * Find an active appointment of the staff member that overlaps the given time.
+	 *
+	 * A staff member can only be in one place at a time, so every service they
+	 * offer counts, and an appointment that only partly overlaps is a conflict.
+	 *
+	 * @since 2.6.0.10 Match any overlap across all of the staff member's services, excluding the appointment being edited.
+	 *
+	 * @param array $data Must carry staff_id, start_time and end_time; an optional id is excluded.
+	 *
+	 * @return string|null The ID of a conflicting appointment, or null when the time is free.
 	 */
 	public static function checkAppointment( $data ) {
 		global $wpdb;
 		$sql = sprintf(
 			'SELECT `%1$s`.id FROM `%1$s`
 					WHERE staff_id = %%d
-					AND service_id = %%d
+					AND id != %%d
 					AND status != "%2$s"
 					AND status != "%3$s"
-					AND date_timestamp = %%d
-					AND ( start_time <= %%d AND end_time >= %%d )',
+					AND start_time < %%d
+					AND end_time > %%d',
 			esc_sql( self::_table() ),
 			esc_sql( self::$cancelled ),
 			esc_sql( self::$delete )
@@ -335,12 +427,69 @@ class Appointments extends DatabaseModel {
 			$wpdb->prepare(
 				$sql, // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 				intval( $data['staff_id'] ),
-				intval( $data['service_id'] ),
-				intval( $data['date_timestamp'] ),
-				intval( $data['start_time'] ),
-				intval( $data['end_time'] )
+				intval( $data['id'] ?? 0 ),
+				intval( $data['end_time'] ),
+				intval( $data['start_time'] )
 			)
 		);
+	}
+
+	/**
+	 * Take the staff member's booking lock, so the overlap check and the write
+	 * that follows it run for one request at a time per staff member.
+	 *
+	 * MySQL drops the lock when the connection closes, so a request that exits
+	 * between taking and releasing it does not leave the staff member locked.
+	 *
+	 * Before MySQL 5.7.5 a connection holds one named lock at a time, and taking
+	 * another silently releases this one, so take no other named lock while it
+	 * is held.
+	 *
+	 * @since 2.6.0.10
+	 *
+	 * @param int $staff_id The staff member being booked.
+	 *
+	 * @return bool True when the lock is held, false when it timed out or failed.
+	 */
+	public static function lock_staff( $staff_id ) {
+		global $wpdb;
+
+		return '1' === $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK( %s, 5 )', self::lock_name( 'bookit_staff_' . (int) $staff_id ) ) );
+	}
+
+	/**
+	 * Release the staff member's booking lock taken by lock_staff().
+	 *
+	 * @since 2.6.0.10
+	 *
+	 * @param int $staff_id The staff member being booked.
+	 */
+	public static function unlock_staff( $staff_id ) {
+		global $wpdb;
+
+		$wpdb->query( $wpdb->prepare( 'SELECT RELEASE_LOCK( %s )', self::lock_name( 'bookit_staff_' . (int) $staff_id ) ) );
+	}
+
+	/**
+	 * Scope a MySQL named lock to this site.
+	 *
+	 * Lock names are shared by the whole MySQL server, so the database name and
+	 * table prefix keep sites on one server, and subsites of a multisite, from
+	 * waiting on each other's locks. MySQL caps a lock name at 64 characters, so
+	 * a longer name is hashed.
+	 *
+	 * @since 2.6.0.10
+	 *
+	 * @param string $key The lock's name within this site.
+	 *
+	 * @return string The server-wide lock name.
+	 */
+	public static function lock_name( $key ) {
+		global $wpdb;
+
+		$name = $wpdb->dbname . '.' . $wpdb->prefix . $key;
+
+		return strlen( $name ) > 64 ? md5( $name ) : $name;
 	}
 
 	/**

@@ -265,7 +265,7 @@ class BookitController {
 	 * The settings are printed into the page source for every visitor, while the stored option also holds
 	 * server-side credentials (e.g. the legacy Stripe secret key) and admin-only configuration.
 	 *
-	 * @since TBD
+	 * @since 2.6.0.9
 	 *
 	 * @param array<string,mixed> $settings The filtered settings, including the runtime keys added by render_calendar().
 	 *

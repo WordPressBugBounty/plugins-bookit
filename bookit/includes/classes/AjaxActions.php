@@ -39,8 +39,6 @@ class AjaxActions {
 		self::addAction( 'bookit_book_appointment', array( AppointmentController::class, 'save' ), true );
 		self::addAction( 'bookit_month_appointments', array( AppointmentController::class, 'get_month_appointments' ), true );
 		self::addAction( 'bookit_day_appointments', array( AppointmentController::class, 'get_day_appointments' ), true );
-		self::addAction( 'bookit_admin_day_appointments', array( AppointmentController::class, 'get_admin_day_appointments' ), true );
-		self::addAction( 'bookit_admin_month_appointments', array( AppointmentController::class, 'get_admin_month_appointments' ), true );
 		self::addAction( 'bookit_is_free_appointment', array( AppointmentController::class, 'is_free_appointment' ), true );
 		self::addAction( 'bookit_login', array( CustomerController::class, 'login' ), true );
 		self::addAction( 'bookit_register', array( CustomerController::class, 'register' ), true );

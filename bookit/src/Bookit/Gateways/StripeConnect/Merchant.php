@@ -31,6 +31,24 @@ class Merchant extends Abstract_Merchant {
 	];
 
 	/**
+	 * Card declines a visitor may get before card payments are refused.
+	 *
+	 * @since 2.6.0.10
+	 *
+	 * @var int
+	 */
+	private const MAX_DECLINES = 10;
+
+	/**
+	 * Length in seconds of the fixed window a visitor's declines are counted in.
+	 *
+	 * @since 2.6.0.10
+	 *
+	 * @var int
+	 */
+	private const DECLINE_WINDOW = 3600;
+
+	/**
 	 * Option key to save the information regarding merchant status.
 	 *
 	 * @since 2.5.0
@@ -437,13 +455,14 @@ class Merchant extends Abstract_Merchant {
 	 *
 	 * @since 2.5.0
 	 * @since 2.6.0.4 Improved payment verification.
+	 * @since 2.6.0.10 Only look up a PaymentIntent ID.
 	 *
 	 * @param string $token   Stripe payment token.
 	 * @param float  $total   Total amount to be charged.
 	 * @param int    $invoice Invoice ID.
 	 */
 	public function check_payment( $token, $total, $invoice ) {
-		if ( empty( $token ) || empty( $total ) || empty( $invoice ) ) {
+		if ( ! $this->is_payment_intent_id( $token ) || ! $total || ! $invoice ) {
 			return;
 		}
 
@@ -602,6 +621,75 @@ class Merchant extends Abstract_Merchant {
 	}
 
 	/**
+	 * Add to or take from the visitor's declines under a named lock, so parallel
+	 * requests can't each pass a stale count or overwrite each other's update,
+	 * as the public booking limit does. Adding fails once the visitor has none
+	 * left, or when the lock can't be taken in time.
+	 *
+	 * @since 2.6.0.10
+	 *
+	 * @param string $key   Transient key of the visitor's declines.
+	 * @param int    $delta 1 to reserve a decline before calling Stripe, -1 to give it back.
+	 *
+	 * @return bool False when a decline could not be reserved.
+	 */
+	private function update_declines( $key, $delta ) {
+		global $wpdb;
+
+		$lock = 'bookit_cd_' . md5( $key );
+		if ( 1 !== (int) $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK(%s, %d)', $lock, 2 ) ) ) {
+			return $delta < 0;
+		}
+
+		$count    = (int) get_transient( $key );
+		$reserved = $delta < 0 || $count < self::MAX_DECLINES;
+		if ( $reserved ) {
+			set_transient( $key, max( 0, $count + $delta ), self::DECLINE_WINDOW );
+		}
+
+		$wpdb->get_var( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $lock ) );
+
+		return $reserved;
+	}
+
+	/**
+	 * Transient key holding the current visitor's card declines in the current
+	 * window, keyed like the public booking limit so a site that resolves the
+	 * real client address for one gets it for both. Behind a proxy or CDN every
+	 * visitor shares REMOTE_ADDR, so such a site must hook
+	 * bookit_booking_rate_client_ip or one visitor's declines stop card payments
+	 * for all of them until the window ends.
+	 *
+	 * @since 2.6.0.10
+	 *
+	 * @return string
+	 */
+	private function get_declines_key() {
+		$ip = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
+		if ( '' !== $ip && false !== filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6 ) ) {
+			$ip = bin2hex( substr( inet_pton( $ip ), 0, 8 ) ) . '::/64';
+		}
+
+		/** This filter is documented in includes/classes/AppointmentController.php */
+		$ip = (string) apply_filters( 'bookit_booking_rate_client_ip', $ip );
+
+		return 'bookit_card_declines_' . md5( $ip ) . '_' . (int) floor( time() / self::DECLINE_WINDOW );
+	}
+
+	/**
+	 * Whether a value is a Stripe PaymentIntent ID.
+	 *
+	 * @since 2.6.0.10
+	 *
+	 * @param mixed $id The value to check.
+	 *
+	 * @return bool
+	 */
+	private function is_payment_intent_id( $id ) {
+		return is_string( $id ) && 1 === preg_match( '/^pi_[A-Za-z0-9_]+$/', $id );
+	}
+
+	/**
 	 * Whether a transaction id is already completed against a different
 	 * appointment's payment.
 	 *
@@ -645,6 +733,7 @@ class Merchant extends Abstract_Merchant {
 	 *
 	 * @since 2.5.0
 	 * @since 2.5.4.1 Validate the PaymentIntent amount matches the expected service price.
+	 * @since 2.6.0.10 Only confirm a PaymentIntent ID, and refuse a visitor after repeated card declines.
 	 *
 	 * @return array Ajax response.
 	 */
@@ -667,9 +756,19 @@ class Merchant extends Abstract_Merchant {
 		$currency        = get_option_by_path( 'bookit_settings.currency' ) ?: SettingsController::$default_currency;
 		$service_amount = $this->get_amount( $service_price, $currency );
 
-		if ( ! empty( $_POST['payment_intent_id'] ) ) {
+		$payment_intent_id = ! empty( $_POST['payment_intent_id'] ) ? \sanitize_text_field( $_POST['payment_intent_id'] ) : '';
+		if ( ! empty( $_POST['payment_intent_id'] ) && ! $this->is_payment_intent_id( $payment_intent_id ) ) {
+			return wp_send_json_error( [ 'message' => __( 'Error occurred during Payment request!', 'bookit' ) ] );
+		}
+
+		// Reserve a decline before calling Stripe; it is given back unless the card is declined.
+		$declines_key = $this->get_declines_key();
+		if ( ! $this->update_declines( $declines_key, 1 ) ) {
+			return wp_send_json_error( [ 'message' => __( 'Too many declined payments. Please try again later.', 'bookit' ) ] );
+		}
+
+		if ( '' !== $payment_intent_id ) {
 			// Confirm the PaymentIntent to finalize payment after handling a required action
-			$payment_intent_id = \sanitize_text_field( $_POST['payment_intent_id'] );
 			$retrieve = wp_remote_get( esc_url( $this->url . $payment_intent_id ), [ 'headers' => $this->get_request_header() ] );
 			$retrieve = wp_remote_retrieve_body( $retrieve );
 			$retrieve = json_decode( $retrieve, true );
@@ -698,6 +797,13 @@ class Merchant extends Abstract_Merchant {
 
 		$request = wp_remote_retrieve_body( $request );
 		$request = json_decode( $request, true );
+
+		// Only a declined card counts; an API key, rate limit or other Stripe error is not the visitor's doing.
+		$declined = 'card_error' === ( $request['error']['type'] ?? '' )
+			|| in_array( $request['status'] ?? '', [ 'requires_payment_method', 'requires_source' ], true );
+		if ( ! $declined ) {
+			$this->update_declines( $declines_key, -1 );
+		}
 
 		return $this->make_response( $request );
 	}

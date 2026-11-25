@@ -64,6 +64,10 @@ export default {
         b_from  = this.moment(break_from, 'HH:mm:ss'),
         b_to    = this.moment(break_to, 'HH:mm:ss'),
         now     = this.moment().set({ hour: new Date().getHours(), minute: new Date().getMinutes() });
+      // A working day ending at 00:00 runs until midnight.
+      if ( to.format('HH:mm:ss') === '00:00:00' ) {
+        to.add(1, 'day');
+      }
       if ( today ) {
         if ( now.isSameOrAfter(to) ) {
           return [];
@@ -143,6 +147,11 @@ export default {
           now     = this.moment().set({ hour: new Date().getHours(), minute: new Date().getMinutes() }),
           from    = this.setTimeToDate(choosen_date, staff_working_hours.start_time ),
           to      = this.setTimeToDate(choosen_date, staff_working_hours.end_time );
+
+      // A working day ending at 00:00 runs until midnight.
+      if ( staff_working_hours.end_time && to.format('HH:mm:ss') === '00:00:00' ) {
+        to.add(1, 'day');
+      }
 
       let timeFormat = this.getWPSettingsTimeFormat();
 
@@ -244,6 +253,11 @@ export default {
           now     = this.moment().set({ hour: new Date().getHours(), minute: new Date().getMinutes() }),
           from    = this.setTimeToDate(choosen_date, staff_working_hours.start_time ),
           to      = this.setTimeToDate(choosen_date, staff_working_hours.end_time );
+
+      // A working day ending at 00:00 runs until midnight.
+      if ( staff_working_hours.end_time && to.format('HH:mm:ss') === '00:00:00' ) {
+        to.add(1, 'day');
+      }
 
       let timeFormat = this.getWPSettingsTimeFormat();
 

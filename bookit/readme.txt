@@ -5,7 +5,7 @@ Tags: booking calendar, appointment booking, appointment calendar, booking, cale
 Requires at least: 6.3
 Requires PHP: 7.4
 Tested up to: 7.1
-Stable tag: 2.6.0.9
+Stable tag: 2.6.0.10
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -67,6 +67,16 @@ This section describes how to install the plugin and get it working.
 
 
 == Changelog ==
+
+= 2.6.0.10 2026-11-25 =
+
+* Security - Hardened appointment time validation on the public booking form. Props to Kang MinSeok (AhnLab) and 13GHOST (Roki Purnama) for reporting.
+* Security - Hardened the staff management screen.
+* Security - Limited unpaid booking holds on the public booking form.
+* Security - Prevented two simultaneous bookings from taking the same staff member's time slot.
+* Security - Hardened account registration and Stripe Connect payments on the public booking form. Sites behind a proxy or CDN should resolve the visitor's address through the `bookit_booking_rate_client_ip` filter.
+* Fix - Prevented a fatal error when the retired `bookit_admin_day_appointments` and `bookit_admin_month_appointments` AJAX actions were requested, by removing their leftover registrations.
+* Fix - Offered booking slots up to midnight for staff whose working day ends at 00:00.
 
 = 2.6.0.9 2026-11-17 =
 
